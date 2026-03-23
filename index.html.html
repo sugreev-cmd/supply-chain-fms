@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply Chain FMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F0F4F8;--surface:#FFFFFF;--nav:#0F2137;--border:#E2E8F0;--border2:#CBD5E1;
+  --text:#0F2137;--sub:#475569;--dim:#94A3B8;
+  --blue:#2563EB;--blue-bg:#EFF6FF;--blue-light:#DBEAFE;
+  --green:#059669;--green-bg:#ECFDF5;--green-light:#D1FAE5;
+  --red:#DC2626;--red-bg:#FEF2F2;
+  --orange:#D97706;--orange-bg:#FFFBEB;
+  --purple:#7C3AED;--purple-bg:#F5F3FF;
+  --cyan:#0891B2;--cyan-bg:#ECFEFF;
+  --gold:#B45309;--gold-bg:#FEF3C7;
+  --teal:#0F766E;--teal-bg:#F0FDFA;
+  --shadow:0 1px 3px rgba(15,33,55,.08),0 4px 12px rgba(15,33,55,.05);
+  --shadow-lg:0 8px 30px rgba(15,33,55,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+input,select,textarea,button{font-family:'Plus Jakarta Sans',sans-serif}
+.page{display:none}.page.active{display:flex}
+
+/* LOGIN */
+#loginPage{align-items:center;justify-content:center;min-height:100vh;width:100%;background:linear-gradient(135deg,#0F2137 0%,#1E3A5F 60%,#0F2137 100%)}
+.login-card{background:#fff;border-radius:20px;width:440px;padding:44px 36px 36px;box-shadow:0 40px 100px rgba(0,0,0,.3);animation:cardIn .5s ease both}
+@keyframes cardIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.l-logo{text-align:center;margin-bottom:32px}
+.l-logo-icon{width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,#0F2137,#2563EB);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px;box-shadow:0 8px 24px rgba(37,99,235,.3)}
+.l-logo-name{font-size:22px;font-weight:800;color:var(--text)}.l-logo-name span{color:var(--blue)}
+.l-logo-sub{font-size:11px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-top:3px}
+.role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:22px}
+.role-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all .2s;position:relative;font-family:'Plus Jakarta Sans',sans-serif;outline:none;width:100%}
+.role-btn *{pointer-events:none}.role-btn:hover{border-color:var(--blue);background:var(--blue-bg)}
+.role-btn.sel{border-color:var(--blue);background:var(--blue-bg);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.role-icon{font-size:22px}.role-name{font-size:11px;font-weight:600;color:var(--sub);text-align:center}
+.role-btn.sel .role-name{color:var(--blue)}
+.role-check{position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--blue);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(0);transition:all .2s}
+.role-btn.sel .role-check{opacity:1;transform:scale(1)}
+.pass-wrap{position:relative;margin-bottom:14px}
+.pass-input{width:100%;padding:13px 44px 13px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;outline:none;transition:all .2s;letter-spacing:2px}
+.pass-input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.pass-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--dim);cursor:pointer;font-size:16px}
+.enter-btn{width:100%;padding:14px;background:linear-gradient(135deg,#0F2137,#2563EB);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;box-shadow:0 4px 16px rgba(37,99,235,.3)}
+.enter-btn:hover{transform:translateY(-2px)}.enter-btn.loading{opacity:.7;pointer-events:none}
+.l-error{text-align:center;font-size:11px;color:var(--red);margin-top:10px;min-height:16px;font-weight:500}
+.l-footer{text-align:center;margin-top:18px;font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+.l-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:10px}
+
+/* APP */
+#appPage{flex-direction:column;height:100vh;overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:54px;background:var(--nav);flex-shrink:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.tb-brand{display:flex;align-items:center;gap:10px}
+.tb-brand-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#2563EB,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:16px}
+.tb-brand-name{font-size:15px;font-weight:800;color:#fff}.tb-brand-name span{color:#60A5FA;font-weight:400}
+.tb-nav{display:flex;height:100%;margin-left:20px}
+.tb-ni{display:flex;align-items:center;gap:6px;padding:0 16px;font-size:12px;font-weight:600;color:rgba(255,255,255,.5);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tb-ni:hover{color:rgba(255,255,255,.8)}.tb-ni.active{color:#fff;border-bottom-color:#60A5FA}
+.tb-right{display:flex;align-items:center;gap:8px}
+.tb-pill{padding:5px 11px;border-radius:20px;font-size:10px;font-weight:600;border:1px solid;cursor:default}
+.tb-pill.role{background:rgba(96,165,250,.12);border-color:rgba(96,165,250,.3);color:#93C5FD}
+.tb-pill.alert{background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.4);color:#FCA5A5}
+.tb-pill.today{background:rgba(217,119,6,.15);border-color:rgba(217,119,6,.4);color:#FCD34D}
+.add-pill{padding:7px 14px;background:linear-gradient(135deg,#2563EB,#7C3AED);border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s}
+.add-pill:hover{transform:translateY(-1px)}
+.logout-btn{padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:none;color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;transition:all .2s}
+.logout-btn:hover{border-color:rgba(220,38,38,.5);color:#FCA5A5}
+.app-content{flex:1;overflow:hidden;position:relative}
+.view{display:none;height:100%;overflow-y:auto}.view.active{display:block}
+.section-wrap{padding:22px 24px}
+
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;cursor:pointer;transition:all .2s;box-shadow:var(--shadow)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.kk-blue::before{background:var(--blue)}.kk-green::before{background:var(--green)}.kk-orange::before{background:var(--orange)}
+.kk-red::before{background:var(--red)}.kk-purple::before{background:var(--purple)}.kk-teal::before{background:var(--teal)}
+.kpi-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:8px}
+.kpi-val{font-size:30px;font-weight:800;line-height:1;margin-bottom:4px}
+.kk-blue .kpi-val{color:var(--blue)}.kk-green .kpi-val{color:var(--green)}.kk-orange .kpi-val{color:var(--orange)}
+.kk-red .kpi-val{color:var(--red)}.kk-purple .kpi-val{color:var(--purple)}.kk-teal .kpi-val{color:var(--teal)}
+.kpi-sub{font-size:10px;color:var(--dim)}
+
+/* TABLE */
+.tw{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:auto;box-shadow:var(--shadow)}
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.sbox{display:flex;align-items:center;gap:6px;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;min-width:240px}
+.sbox input{background:none;border:none;outline:none;color:var(--text);font-size:12px;width:100%}
+.fb{padding:6px 12px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);color:var(--sub);font-size:11px;font-weight:600;cursor:pointer;transition:all .18s}
+.fb:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}.fb.active{background:var(--nav);border-color:var(--nav);color:#fff}
+.add-btn-t{padding:8px 18px;background:linear-gradient(135deg,#2563EB,#7C3AED);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto;transition:all .2s}
+.add-btn-t:hover{transform:translateY(-1px)}
+table{width:100%;border-collapse:collapse;min-width:1200px}
+thead th{background:#0F2137;padding:10px 12px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,.6);white-space:nowrap}
+thead th:first-child{border-radius:12px 0 0 0}thead th:last-child{border-radius:0 12px 0 0}
+tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}tbody tr:hover{background:var(--bg)}
+td{padding:10px 12px;vertical-align:middle}
+.badge{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.badge::before{content:'●';font-size:6px}
+.s-po{background:#EFF6FF;color:#1D4ED8}.s-pay{background:#FEF3C7;color:#92400E}.s-draw{background:#F3E8FF;color:#6B21A8}
+.s-conf{background:#ECFDF5;color:#065F46}.s-mid{background:#FFF7ED;color:#9A3412}.s-insp{background:#F0FDF4;color:#14532D}
+.s-docs{background:#F0F9FF;color:#075985}.s-pack{background:#FDF4FF;color:#701A75}.s-ship{background:#FFFBEB;color:#78350F}
+.s-cha{background:#F0FDFA;color:#134E4A}.s-wh{background:#FEF2F2;color:#991B1B}.s-qc{background:#F5F3FF;color:#4C1D95}
+.s-del{background:#D1FAE5;color:#064E3B}.s-done{background:#ECFDF5;color:#059669}.s-repair{background:#FEF2F2;color:#DC2626}
+.step-progress{display:flex;gap:2px;align-items:center}
+.sp-dot{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--border);background:var(--bg);flex-shrink:0;transition:all .2s}
+.sp-dot.done{background:var(--green);border-color:var(--green)}.sp-dot.active{background:var(--blue);border-color:var(--blue)}.sp-dot.overdue{background:var(--red);border-color:var(--red)}
+.empty{text-align:center;padding:60px}.empty-icon{font-size:48px;margin-bottom:14px;opacity:.3}
+.empty-title{font-size:20px;font-weight:700;color:var(--sub);margin-bottom:6px}.empty-sub{color:var(--dim);font-size:11px;margin-bottom:16px}
+.empty-btn{padding:9px 22px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer}
+
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(15,33,55,.6);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px)}.mo.open{display:flex}
+.md{background:var(--surface);border:1px solid var(--border);border-radius:18px;width:680px;max-width:96vw;max-height:93vh;overflow-y:auto;animation:mIn .22s ease;box-shadow:var(--shadow-lg)}.md.xl{width:1000px}
+@keyframes mIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:5;border-radius:18px 18px 0 0}
+.mt{font-size:17px;font-weight:800}.mt span{color:var(--blue)}
+.mc2{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:none;color:var(--dim);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.mc2:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+.mb{padding:22px}.mf{display:flex;gap:7px;justify-content:flex-end;padding:14px 22px;border-top:1px solid var(--border)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.fr.full{grid-template-columns:1fr}.fr.t3{grid-template-columns:1fr 1fr 1fr}
+.fg{display:flex;flex-direction:column;gap:5px}.fl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sub)}
+.fi,.fs{padding:10px 13px;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:12px;outline:none;width:100%;transition:all .2s}
+.fi:focus,.fs:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.bp{padding:10px 20px;background:var(--blue);border:none;border-radius:9px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s}
+.bp:hover{background:#1D4ED8;transform:translateY(-1px)}.bp.sec{background:var(--green)}.bp.sec:hover{background:#047857}
+.bs{padding:10px 14px;border-radius:9px;border:1.5px solid var(--border);background:none;color:var(--sub);font-size:12px;cursor:pointer;transition:all .2s}
+.bs:hover{border-color:var(--blue);color:var(--blue)}
+.bd2{padding:10px 14px;border-radius:9px;border:1.5px solid rgba(220,38,38,.3);background:var(--red-bg);color:var(--red);font-size:12px;cursor:pointer}
+.fsec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--blue);padding:10px 0 6px;border-bottom:1px solid var(--border);margin-bottom:12px}
+
+/* PIPELINE */
+.pipe-hdr{background:linear-gradient(135deg,#0F2137,#1E3A5F);border-radius:12px;padding:18px 20px;margin-bottom:18px;color:#fff}
+.ph-id{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#60A5FA;margin-bottom:6px}
+.ph-name{font-size:22px;font-weight:800;margin-bottom:8px}
+.ph-meta{display:flex;gap:12px;flex-wrap:wrap}
+.ph-m{font-size:11px;color:rgba(255,255,255,.6);display:flex;align-items:center;gap:4px}
+.ph-m span{color:#fff;font-weight:600}
+.ph-badges{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+
+.step-card{border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:8px;transition:all .2s;background:var(--surface);box-shadow:var(--shadow)}
+.step-card.active-step{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.step-card.done-step{border-color:rgba(5,150,105,.4);background:#FAFFFE}
+.step-card.overdue-step{border-color:rgba(220,38,38,.4);background:#FFFAFA}
+.step-card.locked{opacity:.4;pointer-events:none}
+.step-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--bg);cursor:pointer;transition:background .15s;border-bottom:1px solid transparent}
+.step-card.open .step-head{border-bottom-color:var(--border)}.step-head:hover{background:var(--blue-bg)}
+.shl{display:flex;align-items:center;gap:12px}
+.step-num-badge{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
+.step-title-wrap .step-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim)}
+.step-title-wrap .step-title{font-size:13px;font-weight:700;color:var(--text)}
+.ssb{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600}
+.ssb-p{background:var(--bg);color:var(--dim);border:1px solid var(--border)}
+.ssb-a{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(37,99,235,.2)}
+.ssb-d{background:var(--green-bg);color:var(--green);border:1px solid rgba(5,150,105,.2)}
+.ssb-o{background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,.2)}
+.chev{color:var(--dim);font-size:12px;transition:transform .2s}.step-card.open .chev{transform:rotate(180deg)}
+.step-body{display:none;padding:18px;border-top:1px solid var(--border)}.step-card.open .step-body{display:block}
+.sbrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.sbrow.two{grid-template-columns:1fr 1fr}.sbrow.full{grid-template-columns:1fr}.sbrow.four{grid-template-columns:1fr 1fr 1fr 1fr}
+.delay-badge{padding:4px 9px;border-radius:6px;font-size:10px;font-weight:600}
+.db-ok{background:var(--green-bg);color:var(--green)}.db-late{background:var(--red-bg);color:var(--red)}.db-w{background:var(--orange-bg);color:var(--orange)}
+.step-notes-box{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-top:10px}
+.step-notes-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub);margin-bottom:8px}
+.note-item{font-size:11px;color:var(--text);padding:5px 0;border-bottom:1px solid var(--border)}.note-item:last-child{border-bottom:none}
+.note-time{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);margin-right:8px}
+.save-step-btn{width:100%;padding:10px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-top:10px;transition:all .2s}
+.save-step-btn:hover{background:#1D4ED8}
+.qc-box{display:flex;gap:10px;margin-top:12px}
+.qc-btn{flex:1;padding:14px;border-radius:10px;border:1.5px solid;cursor:pointer;text-align:center;transition:all .2s}
+.qc-pass{background:var(--green-bg);border-color:rgba(5,150,105,.25);color:var(--green)}
+.qc-fail{background:var(--red-bg);border-color:rgba(220,38,38,.2);color:var(--red)}
+.qc-icon{font-size:20px;margin-bottom:6px}.qc-lbl{font-size:12px;font-weight:700}.qc-sub{font-size:10px;opacity:.75;margin-top:2px}
+.connector{display:flex;justify-content:center;color:var(--dim);font-size:14px;padding:2px 0}
+
+/* MIS */
+.mis-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.mis-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.mis-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.mc-b::before{background:var(--blue)}.mc-g::before{background:var(--green)}.mc-o::before{background:var(--orange)}.mc-r::before{background:var(--red)}
+.mis-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:8px}
+.mis-val{font-size:32px;font-weight:800;line-height:1;margin-bottom:3px}
+.mc-b .mis-val{color:var(--blue)}.mc-g .mis-val{color:var(--green)}.mc-o .mis-val{color:var(--orange)}.mc-r .mis-val{color:var(--red)}
+.mis-sub{font-size:10px;color:var(--dim)}
+.mis-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.mis-table{width:100%;border-collapse:collapse}
+.mis-table thead th{background:#0F2137;color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:10px 14px;text-align:left}
+.mis-table tbody tr{border-bottom:1px solid var(--border)}.mis-table tbody tr:hover{background:var(--bg)}
+.mis-table td{padding:11px 14px;font-size:12px;vertical-align:middle}
+.prog-bar{height:6px;background:var(--bg);border-radius:3px;overflow:hidden;border:1px solid var(--border);width:80px;display:inline-block;vertical-align:middle}
+.prog-fill{height:100%;border-radius:3px}
+.score-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.sb-ex{background:var(--green-bg);color:var(--green);border:1px solid rgba(5,150,105,.2)}
+.sb-gd{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(37,99,235,.2)}
+.sb-av{background:var(--orange-bg);color:var(--orange);border:1px solid rgba(217,119,6,.2)}
+.sb-pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,.2)}
+
+/* SYNC DOT */
+.sync-dot{position:fixed;bottom:16px;right:16px;z-index:400;padding:6px 12px;border-radius:20px;font-size:10px;font-weight:600;display:flex;align-items:center;gap:5px;transition:all .25s;box-shadow:var(--shadow)}
+.sync-dot.saved{background:var(--green-bg);border:1px solid rgba(5,150,105,.3);color:var(--green)}
+.sync-dot.saving{background:var(--gold-bg);border:1px solid #FCD34D;color:var(--gold)}
+.sync-dot.err{background:var(--red-bg);border:1px solid rgba(220,38,38,.3);color:var(--red)}
+.sdot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:pulse .8s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--nav);border-radius:10px;padding:11px 18px;font-size:12px;font-weight:500;z-index:999;opacity:0;transition:all .28s;white-space:nowrap;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}.toast.s{border-left:3px solid var(--green)}.toast.e{border-left:3px solid var(--red)}.toast.i{border-left:3px solid var(--blue)}
+
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.mis-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage" class="page active">
+  <div class="login-card">
+    <div class="l-logo">
+      <div class="l-logo-icon">🚢</div>
+      <div class="l-logo-name">Supply Chain <span>FMS</span></div>
+      <div class="l-logo-sub">Flow Management System</div>
+    </div>
+    <div class="l-label">Select Your Role</div>
+    <div class="role-grid">
+      <button class="role-btn" type="button" onclick="pickRole('owner',this)"><div class="role-check">✓</div><div class="role-icon">👑</div><div class="role-name">Owner</div></button>
+      <button class="role-btn" type="button" onclick="pickRole('scm',this)"><div class="role-check">✓</div><div class="role-icon">📦</div><div class="role-name">Supply Chain Manager</div></button>
+      <button class="role-btn" type="button" onclick="pickRole('pc',this)"><div class="role-check">✓</div><div class="role-icon">📋</div><div class="role-name">PC</div></button>
+    </div>
+    <div class="l-label">Password</div>
+    <div class="pass-wrap">
+      <input class="pass-input" type="password" id="passInput" placeholder="Enter password...">
+      <button class="pass-toggle" id="passToggle">👁</button>
+    </div>
+    <button class="enter-btn" id="enterBtn"><span>Sign In</span><span>→</span></button>
+    <div class="l-error" id="lErr"></div>
+    <div class="l-footer">Supply Chain FMS · Confidential · Internal Use Only</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appPage" class="page" style="flex-direction:column">
+  <div class="topbar">
+    <div class="tb-brand">
+      <div class="tb-brand-icon">🚢</div>
+      <div class="tb-brand-name">Supply Chain <span>FMS</span></div>
+    </div>
+    <div class="tb-nav">
+      <div class="tb-ni active" id="nav-dash">📊 Dashboard</div>
+      <div class="tb-ni" id="nav-mis">📈 MIS</div>
+      <div class="tb-ni" id="nav-orders">📦 Orders</div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-pill today" id="todayPill">⚡ 0 Due Today</div>
+      <div class="tb-pill alert" id="alertPill">⚠ 0 Overdue</div>
+      <div class="tb-pill role" id="rolePill">👑 Owner</div>
+      <button class="add-pill" id="addPillBtn">+ New Order</button>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+  </div>
+  <div class="app-content">
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dash">
+      <div class="section-wrap">
+        <div class="kpi-grid">
+          <div class="kpi kk-blue"><div class="kpi-lbl">Total Orders</div><div class="kpi-val" id="dk0">0</div><div class="kpi-sub">All time</div></div>
+          <div class="kpi kk-orange"><div class="kpi-lbl">Active Orders</div><div class="kpi-val" id="dk1">0</div><div class="kpi-sub">In progress</div></div>
+          <div class="kpi kk-red"><div class="kpi-lbl">Overdue Steps</div><div class="kpi-val" id="dk2">0</div><div class="kpi-sub">Need attention</div></div>
+          <div class="kpi kk-purple"><div class="kpi-lbl">In Transit</div><div class="kpi-val" id="dk3">0</div><div class="kpi-sub">Shipped</div></div>
+          <div class="kpi kk-teal"><div class="kpi-lbl">At Warehouse</div><div class="kpi-val" id="dk4">0</div><div class="kpi-sub">QC pending</div></div>
+          <div class="kpi kk-green"><div class="kpi-lbl">Completed</div><div class="kpi-val" id="dk5">0</div><div class="kpi-sub">Delivered</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:#F8FAFF;border-radius:12px 12px 0 0">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub)">⚠️ Overdue Orders</div>
+            </div>
+            <div style="padding:14px 16px;max-height:300px;overflow-y:auto" id="overdueList"></div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:#F8FAFF;border-radius:12px 12px 0 0">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub)">📅 Due Today / This Week</div>
+            </div>
+            <div style="padding:14px 16px;max-height:300px;overflow-y:auto" id="dueTodayList"></div>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:#F8FAFF;border-radius:12px 12px 0 0">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub)">📊 Pipeline Stage Breakdown</div>
+          </div>
+          <div style="padding:14px 16px" id="stageBreak"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIS -->
+    <div class="view" id="view-mis">
+      <div class="section-wrap">
+        <div style="margin-bottom:18px">
+          <div style="font-size:20px;font-weight:800">MIS Score Dashboard</div>
+          <div style="font-size:12px;color:var(--dim)">Order progress, delay analysis and performance tracking</div>
+        </div>
+        <div class="mis-grid" id="misTopCards"></div>
+        <div class="mis-table-wrap">
+          <table class="mis-table">
+            <thead><tr><th style="padding-left:16px">Order ID</th><th>Client</th><th>Current Step</th><th>Total Steps</th><th>Done</th><th>Overdue Steps</th><th>Delay%</th><th>Progress</th><th>Score</th></tr></thead>
+            <tbody id="misBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="view" id="view-orders">
+      <div class="section-wrap">
+        <div class="toolbar">
+          <div class="sbox"><span style="color:var(--dim)">🔍</span><input id="srch" placeholder="Search client, order ID, product..."></div>
+          <button class="fb active" data-f="all">All</button>
+          <button class="fb" data-f="active">Active</button>
+          <button class="fb" data-f="transit">In Transit</button>
+          <button class="fb" data-f="warehouse">Warehouse</button>
+          <button class="fb" data-f="completed">Completed</button>
+          <button class="add-btn-t" id="addBtnT">+ New Order</button>
+        </div>
+        <div class="tw">
+          <table id="tbl" style="display:none">
+            <thead><tr><th>#</th><th>Order ID</th><th>Start Date</th><th>Client</th><th>Phone</th><th>Product / Details</th><th>Quantity</th><th>Shipping Address</th><th>Current Step</th><th>Progress</th><th>Next Action Date</th><th>Remarks</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+          <div id="emptyDiv" class="empty"><div class="empty-icon">🚢</div><div class="empty-title">No Orders Yet</div><div class="empty-sub">Add your first supply chain order</div><button class="empty-btn" id="emptyAddBtn">+ Add First Order</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="mo" id="addMo">
+  <div class="md">
+    <div class="mh"><div class="mt">Add <span>New Order</span></div><button class="mc2" id="closeAddMo">✕</button></div>
+    <div class="mb">
+      <div class="fsec">Client Information</div>
+      <div class="fr"><div class="fg"><label class="fl">Client Name *</label><input class="fi" id="a-client" placeholder="Full name"></div><div class="fg"><label class="fl">Phone Number *</label><input class="fi" id="a-phone" placeholder="Phone number"></div></div>
+      <div class="fr full"><div class="fg"><label class="fl">Shipping Address *</label><input class="fi" id="a-address" placeholder="Complete shipping address"></div></div>
+      <div class="fsec">Order Details</div>
+      <div class="fr full"><div class="fg"><label class="fl">Order Details / Product Description *</label><textarea class="fi" id="a-details" rows="3" placeholder="Product name, specifications, description..."></textarea></div></div>
+      <div class="fr"><div class="fg"><label class="fl">Quantity *</label><input class="fi" id="a-qty" placeholder="e.g. 100 units"></div><div class="fg"><label class="fl">Start Date (Token Received)</label><input class="fi" type="date" id="a-date"></div></div>
+      <div class="fr full"><div class="fg"><label class="fl">Remarks</label><input class="fi" id="a-remarks" placeholder="Any additional notes..."></div></div>
+    </div>
+    <div class="mf"><button class="bs" id="cancelAddMo">Cancel</button><button class="bp" id="saveOrderBtn">💾 Save & Open Pipeline →</button></div>
+  </div>
+</div>
+
+<!-- PIPELINE MODAL -->
+<div class="mo" id="pipeMo">
+  <div class="md xl">
+    <div class="mh"><div class="mt" id="pipeTitle">Order <span>Pipeline</span></div><button class="mc2" id="closePipeMo">✕</button></div>
+    <div class="mb">
+      <div class="pipe-hdr" id="pipeHdr"></div>
+      <div id="flowSteps"></div>
+    </div>
+    <div class="mf"><button class="bd2" id="deleteOrderBtn">🗑 Delete</button><button class="bs" id="closePipeMo2">Close</button><button class="bs" id="editFromPipeBtn">✏️ Edit Details</button></div>
+  </div>
+</div>
+
+<div class="sync-dot saved" id="syncDot"><div class="sdot"></div><span id="syncTxt">Synced</span></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// SUPABASE CONFIG
+// ═══════════════════════════════════════════════
+var SB_URL = 'https://duckuubnszaytuuerffx.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1Y2t1dWJuc3pheXR1dWVyZmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjQ4NDMsImV4cCI6MjA4OTQwMDg0M30.Aoesp7WobjoyvQWFIIZkDpE0JIcvnX9lLlLihK0byLE';
+var SB_HEADERS = {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'};
+var API = SB_URL + '/rest/v1';
+
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+var PASSWORDS = {owner:'scfms@owner', scm:'scfms@scm', pc:'scfms@pc'};
+var ROLE_LABELS = {owner:'👑 Owner', scm:'📦 Supply Chain Manager', pc:'📋 PC'};
+var READ_ONLY = ['pc'];
+
+var orders = [], currentRole = null, viewingId = null, editingId = null, activeFilter = 'all';
+var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// ═══════════════════════════════════════════════
+// STEP DEFINITIONS — All 20 steps
+// ═══════════════════════════════════════════════
+var STEPS = [
+  {key:'s01', num:'01', cat:'Purchase',    title:'Issue Purchase Order (PO) to Supplier / Production Manager',            addDays:1,  color:'#1D4ED8', bg:'#EFF6FF'},
+  {key:'s02', num:'02', cat:'Finance',     title:'Arrange Payment as per Agreed Terms (Advance / TT / LC) & Share Payment Confirmation with Supplier', addDays:2,  color:'#92400E', bg:'#FEF3C7'},
+  {key:'s03', num:'03', cat:'Design',      title:'Production Drawing',                                                    addDays:3,  color:'#6B21A8', bg:'#F3E8FF'},
+  {key:'s04', num:'04', cat:'Approval',    title:'Production Drawing Approval from the Client',                           addDays:5,  color:'#065F46', bg:'#ECFDF5'},
+  {key:'s05', num:'05', cat:'Confirmation','title':'Send Official Confirmation to the Vendor to Begin Production Based on the Approved Technical Drawing and Finalized Specifications', addDays:1,  color:'#9A3412', bg:'#FFF7ED'},
+  {key:'s06', num:'06', cat:'Inspection',  title:'Mid Production Inspection — 5 Angle Images & 360° HD Video',           addDays:28, color:'#065F46', bg:'#F0FDF4'},
+  {key:'s07', num:'07', cat:'QC',          title:'Inspect the Finished Product Packaging to Ensure Quality, Design, and Specifications are Correct — 5 Angle Images & 360° HD Video', addDays:22, color:'#134E4A', bg:'#F0FDFA'},
+  {key:'s08', num:'08', cat:'Documents',   title:'Collect All Required Pre-Shipment Documents (Commercial Invoice, Packing List, Certificate of Origin, Fumigation Certificate, Phytosanitary Certificate, Export License, Test/Quality Certificate if applicable)', addDays:3,  color:'#075985', bg:'#F0F9FF'},
+  {key:'s09', num:'09', cat:'Packaging',   title:'Follow Up with Vendor to Confirm Packaging Completion and Collect Proof', addDays:1,  color:'#701A75', bg:'#FDF4FF'},
+  {key:'s10', num:'10', cat:'Logistics',   title:'Follow Up with Logistics Vendor for Shipment Booking',                  addDays:3,  color:'#78350F', bg:'#FFFBEB'},
+  {key:'s11', num:'11', cat:'Logistics',   title:'Follow Up with Logistics Vendor to Confirm Pickup Schedule and Loading of the Shipment', addDays:2,  color:'#78350F', bg:'#FFFBEB'},
+  {key:'s12', num:'12', cat:'Logistics',   title:'Follow Up with Logistics Vendor to Track Shipment and Collect BL/AWB Copy', addDays:5,  color:'#78350F', bg:'#FFFBEB'},
+  {key:'s13', num:'13', cat:'Customs',     title:'Share All Shipment Documents with CHA and Follow Up to Initiate Customs Clearance Process', addDays:25, color:'#134E4A', bg:'#F0FDFA'},
+  {key:'s14', num:'14', cat:'Customs',     title:'Follow Up with CHA for Customs Clearance Status and Duty Payment',      addDays:4,  color:'#134E4A', bg:'#F0FDFA'},
+  {key:'s15', num:'15', cat:'Customs',     title:'Follow Up with CHA for Goods Release and Arrange Delivery to Warehouse', addDays:1,  color:'#134E4A', bg:'#F0FDFA'},
+  {key:'s16', num:'16', cat:'Warehouse',   title:'Follow Up with Warehouse to Confirm Product Receipt',                   addDays:1,  color:'#7F1D1D', bg:'#FEF2F2'},
+  {key:'s17', num:'17', cat:'QC',          title:'Follow Up with Warehouse Manager for Product QC Status',                addDays:12, color:'#4C1D95', bg:'#F5F3FF'},
+  {key:'s18', num:'18', cat:'QC Decision', title:'QC Inspection Result — Pass or Fail',                                   addDays:2,  color:'#4C1D95', bg:'#F5F3FF'},
+  {key:'s19', num:'19', cat:'Delivery',    title:'Proceed to Final Delivery and Dispatch the Product to the Client',      addDays:3,  color:'#064E3B', bg:'#ECFDF5'},
+  {key:'s20', num:'20', cat:'Confirmation','title':'Follow Up with Warehouse Manager to Confirm Whether the Product Has Been Dispatched and Installed at the Client Site', addDays:1,  color:'#064E3B', bg:'#ECFDF5'},
+];
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function today(){return new Date().toISOString().split('T')[0];}
+function addDays(d,n){var x=new Date(d||today());x.setDate(x.getDate()+n);return x.toISOString().split('T')[0];}
+function fmtDate(d){if(!d)return'—';var x=new Date(d);return x.getDate()+' '+MON[x.getMonth()]+' '+String(x.getFullYear()).slice(2);}
+function daysDiff(a,b){return Math.ceil((new Date(b)-new Date(a))/86400000);}
+function escH(t){if(!t)return'';return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function genId(){return 'SC'+Date.now()+Math.floor(Math.random()*1000);}
+
+function initPipeline(startDate){
+  var d = startDate || today();
+  var pipe = {currentStep:'s01', startDate:d, repairNeeded:false, qcResult:''};
+  var prev = d;
+  STEPS.forEach(function(s,i){
+    var planned = i===0 ? addDays(d,1) : addDays(prev,s.addDays);
+    pipe[s.key] = {planned:planned, actual:'', status:'pending', notes:'', notesLog:[]};
+    prev = planned;
+  });
+  return pipe;
+}
+
+function getCurrentStep(order){
+  if(!order.pipeline) return 's01';
+  return order.pipeline.currentStep || 's01';
+}
+
+function getStepStatus(order, stepKey){
+  if(!order.pipeline || !order.pipeline[stepKey]) return 'pending';
+  var s = order.pipeline[stepKey];
+  if(s.actual) return 'done';
+  if(s.planned && s.planned < today() && !s.actual) return 'overdue';
+  return 'pending';
+}
+
+function isOrderOverdue(order){
+  var cs = getCurrentStep(order);
+  return getStepStatus(order, cs) === 'overdue';
+}
+
+function isDueToday(order){
+  var cs = getCurrentStep(order);
+  if(!order.pipeline || !order.pipeline[cs]) return false;
+  return order.pipeline[cs].planned === today();
+}
+
+function isDueThisWeek(order){
+  var cs = getCurrentStep(order);
+  if(!order.pipeline || !order.pipeline[cs]) return false;
+  var pd = order.pipeline[cs].planned;
+  if(!pd) return false;
+  var diff = daysDiff(today(), pd);
+  return diff >= 0 && diff <= 7;
+}
+
+function getOrderCategory(order){
+  var cs = getCurrentStep(order);
+  var idx = STEPS.findIndex(function(s){return s.key===cs;});
+  if(cs === 's20' && order.pipeline && order.pipeline.s20 && order.pipeline.s20.actual) return 'completed';
+  if(idx >= 12 && idx <= 15) return 'transit';
+  if(idx >= 15 && idx <= 17) return 'warehouse';
+  if(cs === 's19' || cs === 's20') return 'completed';
+  return 'active';
+}
+
+function countDoneSteps(order){
+  if(!order.pipeline) return 0;
+  return STEPS.filter(function(s){return order.pipeline[s.key] && order.pipeline[s.key].actual;}).length;
+}
+
+function getNextActionDate(order){
+  var cs = getCurrentStep(order);
+  if(!order.pipeline || !order.pipeline[cs]) return '—';
+  return fmtDate(order.pipeline[cs].planned);
+}
+
+// ═══════════════════════════════════════════════
+// SUPABASE
+// ═══════════════════════════════════════════════
+function sbFetch(path, method, body){
+  var opts={method:method||'GET',headers:Object.assign({},SB_HEADERS)};
+  if(body) opts.body=JSON.stringify(body);
+  return fetch(API+path,opts).then(function(r){
+    if(!r.ok) return r.text().then(function(t){throw new Error(t);});
+    if(r.status===204) return null;
+    return r.json();
+  });
+}
+
+function loadData(){
+  setSS('saving','Loading...');
+  sbFetch('/sc_orders?order=created_at.asc','GET')
+    .then(function(rows){
+      orders=(rows||[]).map(function(r){
+        return {id:r.id, client:r.client, phone:r.phone, address:r.address, details:r.details, qty:r.qty||'', remarks:r.remarks||'', startDate:r.start_date||'', pipeline:r.pipeline||initPipeline(r.start_date)};
+      });
+      setSS('saved','✓ Synced');
+      buildAll();
+    })
+    .catch(function(e){
+      setSS('err','Load failed');
+      showToast('Load failed: '+e.message,'e');
+      console.error(e);
+    });
+}
+
+function saveOrder_db(order, cb){
+  setSS('saving','Saving...');
+  var row={id:order.id, client:order.client, phone:order.phone, address:order.address, details:order.details, qty:order.qty||'', remarks:order.remarks||'', start_date:order.startDate||today(), pipeline:order.pipeline, updated_at:new Date().toISOString()};
+  sbFetch('/sc_orders?on_conflict=id','POST',row)
+    .then(function(){setSS('saved','✓ Saved');if(cb)cb(null);})
+    .catch(function(e){
+      sbFetch('/sc_orders?id=eq.'+order.id,'PATCH',row)
+        .then(function(){setSS('saved','✓ Saved');if(cb)cb(null);})
+        .catch(function(e2){setSS('err','Save failed');if(cb)cb(e2);});
+    });
+}
+
+function deleteOrder_db(id, cb){
+  setSS('saving','Deleting...');
+  sbFetch('/sc_orders?id=eq.'+id,'DELETE')
+    .then(function(){setSS('saved','✓ Synced');if(cb)cb(null);})
+    .catch(function(e){setSS('err','Delete failed');if(cb)cb(e);});
+}
+
+function setSS(s,t){var d=document.getElementById('syncDot'),tx=document.getElementById('syncTxt');d.className='sync-dot '+s;tx.textContent=t;}
+function buildAll(){renderTable();buildDash();buildMIS();}
+
+// ═══════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════
+var selRole=null;
+function pickRole(r,el){document.querySelectorAll('.role-btn').forEach(function(b){b.classList.remove('sel');});el.classList.add('sel');selRole=r;document.getElementById('passInput').focus();document.getElementById('lErr').textContent='';}
+function togglePass(){var i=document.getElementById('passInput');i.type=i.type==='password'?'text':'password';}
+function doLogin(){
+  if(!selRole){document.getElementById('lErr').textContent='Please select your role';return;}
+  var pass=document.getElementById('passInput').value.trim();
+  if(!pass){document.getElementById('lErr').textContent='Please enter password';return;}
+  var btn=document.getElementById('enterBtn');btn.classList.add('loading');btn.innerHTML='<span>Verifying...</span>';
+  setTimeout(function(){
+    if(pass===PASSWORDS[selRole]){
+      currentRole=selRole;sessionStorage.setItem('sc_role',selRole);
+      btn.innerHTML='<span>✓ Welcome!</span>';btn.style.background='linear-gradient(135deg,#059669,#10B981)';
+      setTimeout(enterApp,500);
+    }else{
+      btn.classList.remove('loading');btn.style.background='';btn.innerHTML='<span>Sign In</span><span>→</span>';
+      document.getElementById('lErr').textContent='Incorrect password';
+      document.getElementById('passInput').value='';
+    }
+  },600);
+}
+function doLogout(){
+  sessionStorage.removeItem('sc_role');currentRole=null;
+  document.getElementById('appPage').classList.remove('active');
+  document.getElementById('loginPage').classList.add('active');
+  document.getElementById('passInput').value='';
+  document.querySelectorAll('.role-btn').forEach(function(b){b.classList.remove('sel');});
+  selRole=null;var btn=document.getElementById('enterBtn');btn.classList.remove('loading');btn.style.background='';btn.innerHTML='<span>Sign In</span><span>→</span>';
+}
+function enterApp(){
+  document.getElementById('loginPage').classList.remove('active');
+  document.getElementById('appPage').classList.add('active');
+  document.getElementById('rolePill').textContent=ROLE_LABELS[currentRole];
+  if(READ_ONLY.includes(currentRole)){document.querySelectorAll('.add-pill,.add-btn-t').forEach(function(b){b.style.display='none';});}
+  loadData();
+}
+function showView(v){
+  document.querySelectorAll('.view').forEach(function(e){e.classList.remove('active');});
+  document.querySelectorAll('.tb-ni').forEach(function(e){e.classList.remove('active');});
+  document.getElementById('view-'+v).classList.add('active');
+  var n=document.getElementById('nav-'+v);if(n)n.classList.add('active');
+  if(v==='dash')buildDash();if(v==='mis')buildMIS();
+}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════
+function buildDash(){
+  var total=orders.length;
+  var active=orders.filter(function(o){return getOrderCategory(o)==='active';}).length;
+  var overdue=orders.filter(isOrderOverdue).length;
+  var transit=orders.filter(function(o){return getOrderCategory(o)==='transit';}).length;
+  var warehouse=orders.filter(function(o){return getOrderCategory(o)==='warehouse';}).length;
+  var completed=orders.filter(function(o){return getOrderCategory(o)==='completed';}).length;
+
+  document.getElementById('dk0').textContent=total;
+  document.getElementById('dk1').textContent=active;
+  document.getElementById('dk2').textContent=overdue;
+  document.getElementById('dk3').textContent=transit;
+  document.getElementById('dk4').textContent=warehouse;
+  document.getElementById('dk5').textContent=completed;
+  document.getElementById('todayPill').textContent='⚡ '+orders.filter(isDueToday).length+' Due Today';
+  document.getElementById('alertPill').textContent='⚠ '+overdue+' Overdue';
+
+  // Overdue list
+  var odList=orders.filter(isOrderOverdue).sort(function(a,b){
+    var ad=a.pipeline&&a.pipeline[getCurrentStep(a)]?a.pipeline[getCurrentStep(a)].planned:'';
+    var bd=b.pipeline&&b.pipeline[getCurrentStep(b)]?b.pipeline[getCurrentStep(b)].planned:'';
+    return ad<bd?-1:1;
+  });
+  document.getElementById('overdueList').innerHTML=odList.length?odList.map(function(o){
+    var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
+    var pd=o.pipeline&&o.pipeline[cs]?o.pipeline[cs].planned:'';var dd=pd?daysDiff(pd,today()):0;
+    return '<div onclick="openPipeline(\''+o.id+'\')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:var(--red-bg);border:1px solid rgba(220,38,38,.15);margin-bottom:6px;cursor:pointer">'
+      +'<div style="width:32px;height:32px;border-radius:8px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">'+step.num+'</div>'
+      +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:12px">'+escH(o.client)+'</div><div style="font-size:10px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(step.title.substring(0,60))+'...</div></div>'
+      +'<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:var(--red)">'+dd+'d late</div><div style="font-size:9px;color:var(--dim)">'+fmtDate(pd)+'</div></div></div>';
+  }).join(''):'<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px">🎉 No overdue orders!</div>';
+
+  // Due this week
+  var dtw=orders.filter(function(o){return !isOrderOverdue(o)&&isDueThisWeek(o);});
+  document.getElementById('dueTodayList').innerHTML=dtw.length?dtw.map(function(o){
+    var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
+    var pd=o.pipeline&&o.pipeline[cs]?o.pipeline[cs].planned:'';
+    var isToday=pd===today();
+    return '<div onclick="openPipeline(\''+o.id+'\')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:'+(isToday?'var(--orange-bg)':'var(--blue-bg)')+';border:1px solid '+(isToday?'rgba(217,119,6,.2)':'rgba(37,99,235,.15)')+';margin-bottom:6px;cursor:pointer">'
+      +'<div style="width:32px;height:32px;border-radius:8px;background:'+(isToday?'var(--orange)':'var(--blue)')+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">'+step.num+'</div>'
+      +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:12px">'+escH(o.client)+'</div><div style="font-size:10px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(step.title.substring(0,60))+'...</div></div>'
+      +'<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:'+(isToday?'var(--orange)':'var(--blue)')+'">'+( isToday?'TODAY':fmtDate(pd))+'</div></div></div>';
+  }).join(''):'<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px">✅ Nothing due this week!</div>';
+
+  // Stage breakdown
+  var counts={};STEPS.forEach(function(s){counts[s.key]=orders.filter(function(o){return getCurrentStep(o)===s.key;}).length;});
+  document.getElementById('stageBreak').innerHTML='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">'+
+    STEPS.map(function(s){var c=counts[s.key]||0;return'<div style="background:'+s.bg+';border:1px solid '+s.color+'30;border-radius:8px;padding:10px;text-align:center">'
+    +'<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:'+s.color+';margin-bottom:4px">Step '+s.num+'</div>'
+    +'<div style="font-size:20px;font-weight:800;color:'+s.color+'">'+c+'</div>'
+    +'<div style="font-size:9px;color:var(--dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+s.cat+'</div></div>';}).join('')+'</div>';
+}
+
+// ═══════════════════════════════════════════════
+// MIS
+// ═══════════════════════════════════════════════
+function buildMIS(){
+  var total=orders.length,done=orders.filter(function(o){return getOrderCategory(o)==='completed';}).length;
+  var overdue=orders.filter(isOrderOverdue).length,active=total-done;
+  document.getElementById('misTopCards').innerHTML=[
+    {c:'mc-b',l:'Total Orders',v:total,s:'All time'},
+    {c:'mc-g',l:'Completed',v:done,s:'Delivered'},
+    {c:'mc-o',l:'Active',v:active,s:'In progress'},
+    {c:'mc-r',l:'Overdue',v:overdue,s:'Need action'}
+  ].map(function(c){return'<div class="mis-card '+c.c+'"><div class="mis-lbl">'+c.l+'</div><div class="mis-val">'+c.v+'</div><div class="mis-sub">'+c.s+'</div></div>';}).join('');
+
+  document.getElementById('misBody').innerHTML=orders.length?orders.map(function(o){
+    var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
+    var doneCount=countDoneSteps(o),total=STEPS.length,pct=Math.round(doneCount/total*100);
+    var overdueSteps=STEPS.filter(function(s){return getStepStatus(o,s.key)==='overdue';}).length;
+    var delayPct=total>0?Math.round(overdueSteps/total*100):0;
+    var score=Math.round(pct*0.7+Math.max(0,100-delayPct)*0.3);
+    var sc=score>=80?'sb-ex':score>=60?'sb-gd':score>=40?'sb-av':'sb-pr';
+    var sl=score>=80?'On Track':score>=60?'Good':score>=40?'Delayed':'Critical';
+    var bc=pct>=80?'var(--green)':pct>=50?'var(--orange)':'var(--red)';
+    return'<tr onclick="openPipeline(\''+o.id+'\')">'
+      +'<td style="padding-left:16px;font-family:monospace;font-size:11px;color:var(--dim)">'+escH(o.id.substring(0,14))+'</td>'
+      +'<td style="font-weight:600">'+escH(o.client)+'</td>'
+      +'<td><span style="font-size:10px;font-weight:600;background:'+step.bg+';color:'+step.color+';padding:3px 8px;border-radius:6px">Step '+step.num+': '+escH(step.cat)+'</span></td>'
+      +'<td style="color:var(--blue);font-weight:600">'+total+'</td>'
+      +'<td style="color:var(--green);font-weight:600">'+doneCount+'</td>'
+      +'<td style="color:var(--red);font-weight:600">'+overdueSteps+'</td>'
+      +'<td><span style="padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;background:'+(delayPct===0?'var(--green-bg)':delayPct<30?'var(--orange-bg)':'var(--red-bg)')+';color:'+(delayPct===0?'var(--green)':delayPct<30?'var(--orange)':'var(--red)')+'">'+delayPct+'%</span></td>'
+      +'<td><div style="display:flex;align-items:center"><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:'+bc+'"></div></div><span style="font-size:11px;font-weight:700;margin-left:6px;color:'+bc+'">'+pct+'%</span></div></td>'
+      +'<td><span class="score-badge '+sc+'">'+score+' — '+sl+'</span></td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--dim)">No orders yet</td></tr>';
+}
+
+// ═══════════════════════════════════════════════
+// TABLE
+// ═══════════════════════════════════════════════
+function setFilter(f,btn){
+  activeFilter=f;
+  document.querySelectorAll('#view-orders .fb[data-f]').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');renderTable();
+}
+function renderTable(){
+  var q=document.getElementById('srch').value.toLowerCase();
+  var data=orders.filter(function(o){
+    if(activeFilter!=='all'&&getOrderCategory(o)!==activeFilter) return false;
+    if(q){var s=(o.client+' '+o.phone+' '+o.details+' '+o.id).toLowerCase();if(s.indexOf(q)<0) return false;}
+    return true;
+  });
+  var empty=document.getElementById('emptyDiv'),tbl=document.getElementById('tbl');
+  if(!data.length){empty.style.display='block';tbl.style.display='none';return;}
+  empty.style.display='none';tbl.style.display='';
+  document.getElementById('tbody').innerHTML=data.map(function(o,i){
+    var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
+    var doneCount=countDoneSteps(o),od=isOrderOverdue(o);
+    var dots=STEPS.slice(0,10).map(function(s){var st=getStepStatus(o,s.key);return'<div class="sp-dot '+st+'"></div>';}).join('');
+    return'<tr onclick="openPipeline(\''+o.id+'\')" style="'+(od?'background:rgba(220,38,38,.02)':'')+'">'
+      +'<td style="color:var(--dim);font-size:11px;font-weight:600">'+(i+1)+'</td>'
+      +'<td style="font-family:monospace;font-size:10px;color:var(--blue);font-weight:600">'+escH(o.id.substring(0,14))+'</td>'
+      +'<td style="font-size:11px;color:var(--sub)">'+fmtDate(o.startDate)+'</td>'
+      +'<td><div style="font-weight:700">'+escH(o.client)+'</div></td>'
+      +'<td style="font-size:11px;color:var(--sub)">'+escH(o.phone)+'</td>'
+      +'<td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(o.details)+'</td>'
+      +'<td style="font-size:11px">'+escH(o.qty)+'</td>'
+      +'<td style="font-size:11px;color:var(--sub);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(o.address)+'</td>'
+      +'<td><span style="font-size:10px;font-weight:600;background:'+step.bg+';color:'+step.color+';padding:3px 8px;border-radius:6px;white-space:nowrap">'+step.num+': '+escH(step.cat)+'</span>'+(od?'<span style="color:var(--red);font-size:9px;margin-left:4px">⚠</span>':'')+'</td>'
+      +'<td><div class="step-progress">'+dots+'</div><div style="font-size:9px;color:var(--dim);margin-top:2px">'+doneCount+'/'+STEPS.length+'</div></td>'
+      +'<td style="font-size:11px;color:var(--sub)">'+getNextActionDate(o)+'</td>'
+      +'<td style="font-size:11px;color:var(--dim);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(o.remarks)+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+// ADD/EDIT ORDER
+// ═══════════════════════════════════════════════
+function openAdd(o){
+  if(READ_ONLY.includes(currentRole)){showToast('View only mode','e');return;}
+  editingId=o?o.id:null;
+  document.getElementById('a-client').value=o?o.client:'';
+  document.getElementById('a-phone').value=o?o.phone:'';
+  document.getElementById('a-address').value=o?o.address:'';
+  document.getElementById('a-details').value=o?o.details:'';
+  document.getElementById('a-qty').value=o?o.qty:'';
+  document.getElementById('a-remarks').value=o?o.remarks:'';
+  document.getElementById('a-date').value=o?o.startDate:today();
+  openMo('addMo');
+}
+function saveOrderForm(){
+  var client=document.getElementById('a-client').value.trim();
+  var phone=document.getElementById('a-phone').value.trim();
+  var address=document.getElementById('a-address').value.trim();
+  var details=document.getElementById('a-details').value.trim();
+  var qty=document.getElementById('a-qty').value.trim();
+  if(!client||!phone||!address||!details){showToast('⚠ Client, Phone, Address and Order Details are required','e');return;}
+  var startDate=document.getElementById('a-date').value||today();
+  var isEdit=!!editingId;
+  var existing=isEdit?orders.find(function(o){return o.id===editingId;}):null;
+  var order={
+    id:editingId||genId(),
+    client:client,phone:phone,address:address,details:details,qty:qty,
+    remarks:document.getElementById('a-remarks').value.trim(),
+    startDate:startDate,
+    pipeline:existing?existing.pipeline:initPipeline(startDate)
+  };
+  closeMo('addMo');
+  saveOrder_db(order,function(err){
+    if(err){showToast('Save failed','e');return;}
+    if(isEdit){orders=orders.map(function(o){return o.id===editingId?order:o;});}
+    else{orders.push(order);}
+    buildAll();
+    showToast(isEdit?'✓ Order updated':'✓ Order added!','s');
+    if(!isEdit) setTimeout(function(){openPipeline(order.id);},200);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// PIPELINE
+// ═══════════════════════════════════════════════
+function getOrder(){return orders.find(function(x){return x.id===viewingId;})||null;}
+
+function openPipeline(id){
+  viewingId=id;var o=getOrder();if(!o)return;
+  document.getElementById('pipeTitle').innerHTML=escH(o.client)+' <span>Pipeline</span>';
+  document.getElementById('pipeHdr').innerHTML=
+    '<div class="ph-id">ORDER ID: '+escH(o.id)+'</div>'
+    +'<div class="ph-name">'+escH(o.client)+'</div>'
+    +'<div class="ph-meta">'
+    +'<div class="ph-m">📞 <span>'+escH(o.phone)+'</span></div>'
+    +'<div class="ph-m">📦 <span>'+escH(o.details.substring(0,50))+'</span></div>'
+    +'<div class="ph-m">🔢 <span>'+escH(o.qty)+'</span></div>'
+    +'<div class="ph-m">📍 <span>'+escH(o.address.substring(0,50))+'</span></div>'
+    +'<div class="ph-m">📅 <span>Start: '+fmtDate(o.startDate)+'</span></div>'
+    +'</div>'
+    +'<div class="ph-badges">'
+    +'<span style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(96,165,250,.2);color:#93C5FD">'+countDoneSteps(o)+'/'+STEPS.length+' Steps Done</span>'
+    +(isOrderOverdue(o)?'<span style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(220,38,38,.2);color:#FCA5A5">⚠ Overdue</span>':'')
+    +'</div>';
+  buildFlow(o);
+  openMo('pipeMo');
+}
+
+function savePipe(cb){
+  var o=getOrder();if(!o)return;
+  setSS('saving','Saving...');
+  sbFetch('/sc_orders?id=eq.'+o.id,'PATCH',{pipeline:o.pipeline,updated_at:new Date().toISOString()})
+    .then(function(){
+      setSS('saved','✓ Saved');
+      orders=orders.map(function(x){return x.id===viewingId?o:x;});
+      renderTable();if(cb)cb();
+    })
+    .catch(function(e){setSS('err','Save failed');showToast('Save failed','e');});
+}
+
+function buildFlow(o){
+  var p=o.pipeline;
+  var c=document.getElementById('flowSteps');c.innerHTML='';
+  var cs=p.currentStep||'s01';
+  var csIdx=STEPS.findIndex(function(s){return s.key===cs;});
+  var ro=READ_ONLY.includes(currentRole);
+
+  STEPS.forEach(function(step,idx){
+    var sd=p[step.key]||{planned:'',actual:'',status:'pending',notes:'',notesLog:[]};
+    var isDone=idx<csIdx||(idx===csIdx&&sd.actual);
+    var isActive=step.key===cs&&!sd.actual;
+    var isLocked=idx>csIdx;
+    var isOverdueStep=isActive&&sd.planned&&sd.planned<today();
+
+    // Delay calculation
+    var delayDays=sd.actual&&sd.planned?daysDiff(sd.planned,sd.actual):null;
+    var delBadge=delayDays===null?'<span class="delay-badge db-w">Pending</span>'
+      :delayDays===0?'<span class="delay-badge db-ok">✓ On Time</span>'
+      :delayDays>0?'<span class="delay-badge db-late">+'+delayDays+'d Late</span>'
+      :'<span class="delay-badge db-ok">'+Math.abs(delayDays)+'d Early</span>';
+
+    var card=document.createElement('div');
+    card.className='step-card'+(isActive?' active-step':'')+(isDone?' done-step':'')+(isLocked?' locked':'')+(isOverdueStep?' overdue-step':'');
+    if(isActive||isDone) card.classList.add('open');
+
+    var statusClass=isDone?'ssb-d':isActive?(isOverdueStep?'ssb-o':'ssb-a'):'ssb-p';
+    var statusLabel=isDone?'✓ Done':isActive?(isOverdueStep?'⚠ Overdue':'● Active'):'○ Pending';
+
+    // Notes log
+    var notesHtml=(sd.notesLog&&sd.notesLog.length)?sd.notesLog.map(function(n){
+      return'<div class="note-item"><span class="note-time">'+n.ts+'</span>'+escH(n.text)+'</div>';
+    }).join(''):'<div style="color:var(--dim);font-size:11px">No notes yet</div>';
+
+    card.innerHTML=
+      '<div class="step-head" onclick="toggleStep(this)">'
+        +'<div class="shl">'
+          +'<div class="step-num-badge" style="background:'+step.bg+';color:'+step.color+'">'+step.num+'</div>'
+          +'<div class="step-title-wrap">'
+            +'<div class="step-cat">'+step.cat+' · '+(isActive&&sd.planned?'Due: '+fmtDate(sd.planned):'Planned: '+fmtDate(sd.planned))+'</div>'
+            +'<div class="step-title">'+step.title+'</div>'
+          +'</div>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:7px">'
+          +'<span class="ssb '+statusClass+'">'+statusLabel+'</span>'
+          +'<span class="chev">▾</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="step-body">'
+        +'<div class="sbrow">'
+          +'<div class="fg"><label class="fl">Planned Date</label><input class="fi" type="date" id="pl-'+step.key+'" value="'+(sd.planned||'')+'" '+(ro?'disabled':'')+'></div>'
+          +'<div class="fg"><label class="fl">Actual Date</label><input class="fi" type="date" id="ac-'+step.key+'" value="'+(sd.actual||'')+'" '+(ro?'disabled':'')+'></div>'
+          +'<div class="fg"><label class="fl">Time Delay</label><div style="padding-top:8px">'+delBadge+'</div></div>'
+        +'</div>'
+        +'<div class="sbrow full"><div class="fg"><label class="fl">Notes</label><input class="fi" id="nt-'+step.key+'" value="'+(sd.notes||'').replace(/"/g,'&quot;')+'" placeholder="Notes for this step..." '+(ro?'disabled':'')+'></div></div>'
+        +(!ro&&isActive&&step.key!=='s18'?'<button class="save-step-btn" onclick="saveStepAndAdvance(\''+step.key+'\','+idx+')">💾 Save & Mark as Done → Move to Step '+(idx<19?STEPS[idx+1].num:'Complete')+'</button>':'')
+        +(step.key==='s18'&&isActive&&!ro?buildQCDecision():'')
+        +'<div class="step-notes-box"><div class="step-notes-title">📝 Activity Log</div>'+notesHtml+'</div>'
+      +'</div>';
+
+    c.appendChild(card);
+
+    if(idx<STEPS.length-1){
+      var conn=document.createElement('div');conn.className='connector';conn.textContent='↓';c.appendChild(conn);
+    }
+  });
+}
+
+function buildQCDecision(){
+  return '<div class="qc-box">'
+    +'<div class="qc-btn qc-pass" onclick="qcResult(\'pass\')">'
+      +'<div class="qc-icon">✅</div>'
+      +'<div class="qc-lbl">QC Passed</div>'
+      +'<div class="qc-sub">Proceed to Final Delivery</div>'
+    +'</div>'
+    +'<div class="qc-btn qc-fail" onclick="qcResult(\'fail\')">'
+      +'<div class="qc-icon">❌</div>'
+      +'<div class="qc-lbl">QC Failed</div>'
+      +'<div class="qc-sub">Arrange Repair Team</div>'
+    +'</div>'
+  +'</div>';
+}
+
+function saveStepAndAdvance(stepKey, idx){
+  var o=getOrder();if(!o)return;
+  var acEl=document.getElementById('ac-'+stepKey);
+  var plEl=document.getElementById('pl-'+stepKey);
+  var ntEl=document.getElementById('nt-'+stepKey);
+  var actualDate=(acEl&&acEl.value)?acEl.value:today();
+  if(plEl&&plEl.value) o.pipeline[stepKey].planned=plEl.value;
+  o.pipeline[stepKey].actual=actualDate;
+  o.pipeline[stepKey].status='done';
+  if(ntEl&&ntEl.value){
+    o.pipeline[stepKey].notes=ntEl.value;
+    if(!o.pipeline[stepKey].notesLog) o.pipeline[stepKey].notesLog=[];
+    var now=new Date();
+    o.pipeline[stepKey].notesLog.push({text:ntEl.value,ts:now.getDate()+' '+MON[now.getMonth()]+' '+String(now.getFullYear()).slice(2)+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')});
+  }
+  // Advance to next step
+  if(idx<STEPS.length-1){
+    var nextStep=STEPS[idx+1];
+    o.pipeline.currentStep=nextStep.key;
+    // Set next planned date from actual + addDays
+    if(!o.pipeline[nextStep.key].actual){
+      o.pipeline[nextStep.key].planned=addDays(actualDate,nextStep.addDays);
+    }
+  } else {
+    o.pipeline.currentStep='done';
+  }
+  savePipe(function(){buildAll();showToast('✓ Step '+STEPS[idx].num+' done! Moved to Step '+(idx<STEPS.length-1?STEPS[idx+1].num:'Complete'),'s');openPipeline(viewingId);});
+}
+
+function qcResult(result){
+  var o=getOrder();if(!o)return;
+  var acEl=document.getElementById('ac-s18');
+  var actualDate=(acEl&&acEl.value)?acEl.value:today();
+  o.pipeline.s18.actual=actualDate;
+  o.pipeline.s18.status='done';
+  o.pipeline.qcResult=result;
+  if(result==='pass'){
+    o.pipeline.currentStep='s19';
+    o.pipeline.s19.planned=addDays(actualDate,2);
+    showToast('✅ QC Passed! Proceeding to Final Delivery','s');
+  } else {
+    o.pipeline.repairNeeded=true;
+    o.pipeline.currentStep='s19';
+    o.pipeline.s19.planned=addDays(actualDate,3);
+    showToast('⚠ QC Failed — Repair arranged, then Final Delivery','i');
+  }
+  savePipe(function(){buildAll();openPipeline(viewingId);});
+}
+
+function toggleStep(head){head.closest('.step-card').classList.toggle('open');}
+
+function doDeleteOrder(){
+  if(!confirm('Delete this order permanently?'))return;
+  deleteOrder_db(viewingId,function(err){
+    if(err){showToast('Delete failed','e');return;}
+    orders=orders.filter(function(o){return o.id!==viewingId;});
+    closeMo('pipeMo');buildAll();showToast('🗑 Order deleted','e');
+  });
+}
+function openEditFromPipe(){var o=getOrder();closeMo('pipeMo');setTimeout(function(){openAdd(o);},100);}
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function openMo(id){document.getElementById(id).classList.add('open');}
+function closeMo(id){document.getElementById(id).classList.remove('open');}
+function showToast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'s')+' show';setTimeout(function(){t.classList.remove('show');},3200);}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+window.onload=function(){
+  document.getElementById('passInput').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+  document.getElementById('enterBtn').addEventListener('click',doLogin);
+  document.getElementById('passToggle').addEventListener('click',togglePass);
+  document.getElementById('logoutBtn').addEventListener('click',doLogout);
+  document.getElementById('nav-dash').addEventListener('click',function(){showView('dash');});
+  document.getElementById('nav-mis').addEventListener('click',function(){showView('mis');});
+  document.getElementById('nav-orders').addEventListener('click',function(){showView('orders');});
+  document.getElementById('addPillBtn').addEventListener('click',function(){openAdd(null);});
+  document.getElementById('addBtnT').addEventListener('click',function(){openAdd(null);});
+  document.getElementById('emptyAddBtn').addEventListener('click',function(){openAdd(null);});
+  document.getElementById('closeAddMo').addEventListener('click',function(){closeMo('addMo');});
+  document.getElementById('cancelAddMo').addEventListener('click',function(){closeMo('addMo');});
+  document.getElementById('saveOrderBtn').addEventListener('click',saveOrderForm);
+  document.getElementById('closePipeMo').addEventListener('click',function(){closeMo('pipeMo');});
+  document.getElementById('closePipeMo2').addEventListener('click',function(){closeMo('pipeMo');});
+  document.getElementById('deleteOrderBtn').addEventListener('click',doDeleteOrder);
+  document.getElementById('editFromPipeBtn').addEventListener('click',openEditFromPipe);
+  document.querySelectorAll('#view-orders .fb[data-f]').forEach(function(btn){btn.addEventListener('click',function(){setFilter(btn.getAttribute('data-f'),btn);});});
+  document.getElementById('srch').addEventListener('input',renderTable);
+  document.querySelectorAll('.mo').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});});
+  var saved=sessionStorage.getItem('sc_role');
+  if(saved&&PASSWORDS[saved]){currentRole=saved;enterApp();}
+};
+</script>
+</body>
+</html>
