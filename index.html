@@ -211,6 +211,24 @@ td{padding:10px 12px;vertical-align:middle}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--nav);border-radius:10px;padding:11px 18px;font-size:12px;font-weight:500;z-index:999;opacity:0;transition:all .28s;white-space:nowrap;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.3)}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}.toast.s{border-left:3px solid var(--green)}.toast.e{border-left:3px solid var(--red)}.toast.i{border-left:3px solid var(--blue)}
 
+.dcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.dcard-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:#F8FAFF;}
+.dcard-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub)}.dcard-title span{color:var(--blue)}
+.dcard-body{padding:14px 16px}.dcard-badge{padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600}
+.fn-label{width:90px;font-size:11px;font-weight:600;color:var(--sub);flex-shrink:0;text-align:right}
+.fn-bar-wrap{flex:1;height:24px;background:var(--bg);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.fn-bar-fill{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:700;color:#fff}
+.fn-count{width:28px;text-align:right;font-size:15px;font-weight:800;flex-shrink:0;color:var(--text)}
+.fn-arrow{text-align:center;color:var(--dim);font-size:10px;padding-left:96px;margin-bottom:2px}
+.conv-bar{margin-top:10px;padding:10px 12px;background:var(--green-bg);border:1px solid rgba(5,150,105,.2);border-radius:8px;display:flex;align-items:center;justify-content:space-between}
+.hot-item{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:8px;background:var(--bg);border:1px solid var(--border);cursor:pointer;transition:all .18s}
+.hot-item:hover{border-color:var(--blue);background:var(--blue-bg)}.hot-item.ov{border-color:rgba(220,38,38,.3);background:var(--red-bg)}.hot-item.td2{border-color:rgba(217,119,6,.3);background:var(--orange-bg)}
+.stb-item{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--border);margin-bottom:5px}
+.stb-name{flex:1;font-size:11px;font-weight:500;color:var(--sub)}.stb-cnt{font-size:16px;font-weight:800;min-width:24px;text-align:right}
+.stb-bar{width:50px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}.stb-fill{height:100%;border-radius:2px}
+.tm-table{width:100%;border-collapse:collapse}
+.tm-table th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--dim);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);background:#F8FAFF}
+.tm-table td{padding:9px 12px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text)}.tm-table tr:last-child td{border-bottom:none}.tm-table tr:hover td{background:var(--bg)}
 @media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.mis-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -268,31 +286,59 @@ td{padding:10px 12px;vertical-align:middle}
       <div class="section-wrap">
         <div class="kpi-grid">
           <div class="kpi kk-blue"><div class="kpi-lbl">Total Orders</div><div class="kpi-val" id="dk0">0</div><div class="kpi-sub">All time</div></div>
-          <div class="kpi kk-orange"><div class="kpi-lbl">Active Orders</div><div class="kpi-val" id="dk1">0</div><div class="kpi-sub">In progress</div></div>
-          <div class="kpi kk-red"><div class="kpi-lbl">Overdue Steps</div><div class="kpi-val" id="dk2">0</div><div class="kpi-sub">Need attention</div></div>
+          <div class="kpi kk-orange"><div class="kpi-lbl">Active Orders</div><div class="kpi-val" id="dk1">0</div><div class="kpi-sub" id="dk1s">In progress</div></div>
+          <div class="kpi kk-red"><div class="kpi-lbl">Overdue Steps</div><div class="kpi-val" id="dk2">0</div><div class="kpi-sub" id="dk2s">All clear ✓</div></div>
           <div class="kpi kk-purple"><div class="kpi-lbl">In Transit</div><div class="kpi-val" id="dk3">0</div><div class="kpi-sub">Shipped</div></div>
           <div class="kpi kk-teal"><div class="kpi-lbl">At Warehouse</div><div class="kpi-val" id="dk4">0</div><div class="kpi-sub">QC pending</div></div>
           <div class="kpi kk-green"><div class="kpi-lbl">Completed</div><div class="kpi-val" id="dk5">0</div><div class="kpi-sub">Delivered</div></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)">
-            <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:#F8FAFF;border-radius:12px 12px 0 0">
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub)">⚠️ Overdue Orders</div>
-            </div>
-            <div style="padding:14px 16px;max-height:300px;overflow-y:auto" id="overdueList"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 300px;gap:14px;margin-bottom:14px">
+          <div class="dcard">
+            <div class="dcard-hdr"><div class="dcard-title">Pipeline <span>Funnel</span></div><div class="dcard-badge" id="convRate" style="background:var(--green-bg);color:var(--green)">0% Conv.</div></div>
+            <div class="dcard-body" id="funnelWrap"></div>
           </div>
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)">
-            <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:#F8FAFF;border-radius:12px 12px 0 0">
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub)">📅 Due Today / This Week</div>
-            </div>
-            <div style="padding:14px 16px;max-height:300px;overflow-y:auto" id="dueTodayList"></div>
+          <div class="dcard">
+            <div class="dcard-hdr"><div class="dcard-title">Today's <span>Action List</span></div><div class="dcard-badge" id="hotBadge" style="background:var(--orange-bg);color:var(--orange)">0 items</div></div>
+            <div class="dcard-body"><div style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto" id="hotlist"></div></div>
+          </div>
+          <div class="dcard">
+            <div class="dcard-hdr"><div class="dcard-title">Stage <span>Breakdown</span></div></div>
+            <div class="dcard-body" id="stageBreak"></div>
           </div>
         </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)">
-          <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:#F8FAFF;border-radius:12px 12px 0 0">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub)">📊 Pipeline Stage Breakdown</div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="dcard">
+              <div class="dcard-hdr"><div class="dcard-title">⚠ <span>Overdue Orders</span></div><div class="dcard-badge" id="odBadge" style="background:var(--red-bg);color:var(--red)">0</div></div>
+              <div class="dcard-body" id="overdueList"></div>
+            </div>
+            <div class="dcard">
+              <div class="dcard-hdr"><div class="dcard-title">📅 Due <span>This Week</span></div><div class="dcard-badge" id="weekBadge" style="background:var(--blue-bg);color:var(--blue)">0</div></div>
+              <div class="dcard-body" id="dueTodayList"></div>
+            </div>
           </div>
-          <div style="padding:14px 16px" id="stageBreak"></div>
+          <div class="dcard">
+            <div class="dcard-hdr"><div class="dcard-title">Step <span>Progress</span></div></div>
+            <div class="dcard-body" id="stepProgress"></div>
+          </div>
+        </div>
+        <div class="dcard" style="margin-bottom:14px">
+          <div class="dcard-hdr"><div class="dcard-title">All <span>Orders Overview</span></div></div>
+          <div class="dcard-body" style="padding:0">
+            <table class="tm-table">
+              <thead><tr>
+                <th style="padding-left:16px">Client</th>
+                <th>Order ID</th>
+                <th>Start Date</th>
+                <th>Product</th>
+                <th>Current Step</th>
+                <th>Progress</th>
+                <th>Next Action</th>
+                <th>Status</th>
+              </tr></thead>
+              <tbody id="dashOrderBody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -439,7 +485,9 @@ function initPipeline(startDate){
 
 function getCurrentStep(order){
   if(!order.pipeline) return 's01';
-  return order.pipeline.currentStep || 's01';
+  var cs = order.pipeline.currentStep || 's01';
+  if(cs === 'done') return 's20';
+  return cs;
 }
 
 function getStepStatus(order, stepKey){
@@ -472,11 +520,15 @@ function isDueThisWeek(order){
 
 function getOrderCategory(order){
   var cs = getCurrentStep(order);
+  var p = order.pipeline || {};
+  // Completed: s20 actual filled OR currentStep = 'done' OR all 20 steps done
+  if(cs === 'done') return 'completed';
+  if(p.s20 && p.s20.actual) return 'completed';
+  var doneCount = countDoneSteps(order);
+  if(doneCount >= 20) return 'completed';
   var idx = STEPS.findIndex(function(s){return s.key===cs;});
-  if(cs === 's20' && order.pipeline && order.pipeline.s20 && order.pipeline.s20.actual) return 'completed';
-  if(idx >= 12 && idx <= 15) return 'transit';
-  if(idx >= 15 && idx <= 17) return 'warehouse';
-  if(cs === 's19' || cs === 's20') return 'completed';
+  if(idx >= 12 && idx <= 14) return 'transit';
+  if(idx >= 15 && idx <= 16) return 'warehouse';
   return 'active';
 }
 
@@ -599,55 +651,156 @@ function buildDash(){
   var transit=orders.filter(function(o){return getOrderCategory(o)==='transit';}).length;
   var warehouse=orders.filter(function(o){return getOrderCategory(o)==='warehouse';}).length;
   var completed=orders.filter(function(o){return getOrderCategory(o)==='completed';}).length;
+  var dueToday=orders.filter(isDueToday).length;
 
   document.getElementById('dk0').textContent=total;
   document.getElementById('dk1').textContent=active;
+  document.getElementById('dk1s').textContent=active>0?'Action needed':'All clear ✓';
+  document.getElementById('dk1s').className='kpi-sub '+(active>0?'':'');
   document.getElementById('dk2').textContent=overdue;
+  document.getElementById('dk2s').textContent=overdue>0?'⚠ Needs attention':'On track ✓';
+  document.getElementById('dk2s').style.color=overdue>0?'var(--red)':'var(--green)';
   document.getElementById('dk3').textContent=transit;
   document.getElementById('dk4').textContent=warehouse;
   document.getElementById('dk5').textContent=completed;
-  document.getElementById('todayPill').textContent='⚡ '+orders.filter(isDueToday).length+' Due Today';
+  document.getElementById('todayPill').textContent='⚡ '+dueToday+' Due Today';
   document.getElementById('alertPill').textContent='⚠ '+overdue+' Overdue';
 
-  // Overdue list
+  // ── FUNNEL ──
+  var stageKeys=['s01','s02','s03','s04','s05','s06','s07','s08','s09','s10','s11','s12','s13','s14','s15','s16','s17','s18','s19','s20'];
+  var funnelStages=[
+    {l:'Production',  col:'#2563EB', keys:['s01','s02','s03','s04','s05']},
+    {l:'Inspection',  col:'#7C3AED', keys:['s06','s07']},
+    {l:'Documents',   col:'#D97706', keys:['s08','s09']},
+    {l:'Logistics',   col:'#C8930A', keys:['s10','s11','s12']},
+    {l:'Customs',     col:'#0891B2', keys:['s13','s14','s15']},
+    {l:'Warehouse',   col:'#0F766E', keys:['s16','s17','s18']},
+    {l:'Delivery',    col:'#059669', keys:['s19','s20']},
+  ];
+  var cr=total>0?Math.round((completed/total)*100):0;
+  document.getElementById('convRate').textContent=cr+'% Completed';
+  document.getElementById('funnelWrap').innerHTML=funnelStages.map(function(fs,i){
+    var cnt=orders.filter(function(o){var cs=getCurrentStep(o);return fs.keys.indexOf(cs)>-1;}).length;
+    var w=Math.max(cnt>0?(cnt/Math.max(total,1))*100:0,cnt>0?4:0);
+    return'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      +'<div style="width:90px;font-size:11px;font-weight:600;color:var(--sub);flex-shrink:0;text-align:right">'+fs.l+'</div>'
+      +'<div style="flex:1;height:24px;background:var(--bg);border-radius:4px;overflow:hidden;border:1px solid var(--border)">'
+        +'<div style="width:'+w+'%;height:100%;background:'+fs.col+';border-radius:3px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:700;color:#fff">'+(cnt>0?cnt:'')+'</div>'
+      +'</div>'
+      +'<div style="width:28px;text-align:right;font-size:15px;font-weight:800;color:var(--text)">'+cnt+'</div></div>'
+      +(i<6?'<div style="text-align:center;color:var(--dim);font-size:10px;padding-left:96px;margin-bottom:2px">↓</div>':'');
+  }).join('')+'<div style="margin-top:10px;padding:10px 12px;background:var(--green-bg);border:1px solid rgba(5,150,105,.2);border-radius:8px;display:flex;align-items:center;justify-content:space-between"><div style="font-size:10px;color:var(--sub)">Completion Rate</div><div style="font-size:20px;font-weight:800;color:var(--green)">'+cr+'%</div></div>';
+
+  // ── ACTION LIST (today + overdue) ──
+  var hot=orders.filter(function(o){return isDueToday(o)||isOrderOverdue(o);}).sort(function(a,b){return(isOrderOverdue(b)?1:0)-(isOrderOverdue(a)?1:0);});
+  document.getElementById('hotBadge').textContent=hot.length+' items';
+  document.getElementById('hotlist').innerHTML=hot.length?hot.slice(0,7).map(function(o){
+    var od=isOrderOverdue(o);
+    var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
+    var pd=o.pipeline&&o.pipeline[cs]?o.pipeline[cs].planned:'';
+    var dd=pd?daysDiff(pd,today()):0;
+    return'<div class="hot-item '+(od?'ov':'td2')+'" onclick="openPipeline(\''+o.id+'\')">'
+      +'<div style="width:30px;height:30px;border-radius:8px;background:'+(od?'var(--red)':'var(--orange)')+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">'+step.num+'</div>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(o.client)+'</div>'
+      +'<div style="font-size:10px;color:var(--dim);margin-top:1px">'+escH(step.cat)+' · '+o.phone+'</div></div>'
+      +'<div style="text-align:right;flex-shrink:0"><div style="font-size:10px;font-weight:700;color:'+(od?'var(--red)':'var(--orange)')+'">'+( od?dd+'d late':'Today')+'</div>'
+      +'<div style="font-size:9px;color:var(--dim);margin-top:1px">'+fmtDate(pd)+'</div></div></div>';
+  }).join(''):'<div style="text-align:center;padding:24px;color:var(--dim);font-size:12px">🎉 All clear!</div>';
+
+  // ── STAGE BREAKDOWN (compact list) ──
+  var stageSummary=[
+    {icon:'📦',name:'Production (S01-S05)',col:'var(--blue)',  keys:['s01','s02','s03','s04','s05']},
+    {icon:'🔍',name:'Inspection (S06-S07)', col:'var(--purple)',keys:['s06','s07']},
+    {icon:'📄',name:'Documents (S08-S09)',  col:'var(--orange)',keys:['s08','s09']},
+    {icon:'🚢',name:'Logistics (S10-S12)', col:'var(--gold)',  keys:['s10','s11','s12']},
+    {icon:'🛃',name:'Customs (S13-S15)',    col:'var(--cyan)',  keys:['s13','s14','s15']},
+    {icon:'🏭',name:'Warehouse (S16-S18)', col:'var(--teal)',  keys:['s16','s17','s18']},
+    {icon:'✅',name:'Delivery (S19-S20)',   col:'var(--green)', keys:['s19','s20']},
+  ];
+  document.getElementById('stageBreak').innerHTML=stageSummary.map(function(sg){
+    var cnt=orders.filter(function(o){var cs=getCurrentStep(o);return sg.keys.indexOf(cs)>-1;}).length;
+    var w=total>0?Math.max(cnt>0?(cnt/total)*100:0,cnt>0?8:0):0;
+    return'<div class="stb-item">'
+      +'<div style="font-size:14px;width:22px;text-align:center">'+sg.icon+'</div>'
+      +'<div class="stb-name">'+sg.name+'</div>'
+      +'<div class="stb-bar"><div class="stb-fill" style="width:'+w+'%;background:'+sg.col+'"></div></div>'
+      +'<div class="stb-cnt" style="color:'+sg.col+'">'+cnt+'</div></div>';
+  }).join('');
+
+  // ── OVERDUE LIST ──
   var odList=orders.filter(isOrderOverdue).sort(function(a,b){
     var ad=a.pipeline&&a.pipeline[getCurrentStep(a)]?a.pipeline[getCurrentStep(a)].planned:'';
     var bd=b.pipeline&&b.pipeline[getCurrentStep(b)]?b.pipeline[getCurrentStep(b)].planned:'';
     return ad<bd?-1:1;
   });
+  document.getElementById('odBadge').textContent=odList.length;
   document.getElementById('overdueList').innerHTML=odList.length?odList.map(function(o){
     var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
     var pd=o.pipeline&&o.pipeline[cs]?o.pipeline[cs].planned:'';var dd=pd?daysDiff(pd,today()):0;
-    return '<div onclick="openPipeline(\''+o.id+'\')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:var(--red-bg);border:1px solid rgba(220,38,38,.15);margin-bottom:6px;cursor:pointer">'
-      +'<div style="width:32px;height:32px;border-radius:8px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">'+step.num+'</div>'
-      +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:12px">'+escH(o.client)+'</div><div style="font-size:10px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(step.title.substring(0,60))+'...</div></div>'
-      +'<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:var(--red)">'+dd+'d late</div><div style="font-size:9px;color:var(--dim)">'+fmtDate(pd)+'</div></div></div>';
-  }).join(''):'<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px">🎉 No overdue orders!</div>';
+    return'<div onclick="openPipeline(\''+o.id+'\')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--red-bg);border:1px solid rgba(220,38,38,.15);margin-bottom:6px;cursor:pointer">'
+      +'<div style="width:28px;height:28px;border-radius:7px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">'+step.num+'</div>'
+      +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:12px">'+escH(o.client)+'</div>'
+      +'<div style="font-size:10px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(step.cat)+'</div></div>'
+      +'<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:var(--red)">'+dd+'d late</div>'
+      +'<div style="font-size:9px;color:var(--dim)">'+fmtDate(pd)+'</div></div></div>';
+  }).join(''):'<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px">🎉 No overdue!</div>';
 
-  // Due this week
+  // ── DUE THIS WEEK ──
   var dtw=orders.filter(function(o){return !isOrderOverdue(o)&&isDueThisWeek(o);});
+  document.getElementById('weekBadge').textContent=dtw.length;
   document.getElementById('dueTodayList').innerHTML=dtw.length?dtw.map(function(o){
     var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
     var pd=o.pipeline&&o.pipeline[cs]?o.pipeline[cs].planned:'';
     var isToday=pd===today();
-    return '<div onclick="openPipeline(\''+o.id+'\')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:'+(isToday?'var(--orange-bg)':'var(--blue-bg)')+';border:1px solid '+(isToday?'rgba(217,119,6,.2)':'rgba(37,99,235,.15)')+';margin-bottom:6px;cursor:pointer">'
-      +'<div style="width:32px;height:32px;border-radius:8px;background:'+(isToday?'var(--orange)':'var(--blue)')+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">'+step.num+'</div>'
-      +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:12px">'+escH(o.client)+'</div><div style="font-size:10px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(step.title.substring(0,60))+'...</div></div>'
-      +'<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:'+(isToday?'var(--orange)':'var(--blue)')+'">'+( isToday?'TODAY':fmtDate(pd))+'</div></div></div>';
-  }).join(''):'<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px">✅ Nothing due this week!</div>';
+    return'<div onclick="openPipeline(\''+o.id+'\')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:'+(isToday?'var(--orange-bg)':'var(--blue-bg)')+';border:1px solid '+(isToday?'rgba(217,119,6,.2)':'rgba(37,99,235,.15)')+';margin-bottom:6px;cursor:pointer">'
+      +'<div style="width:28px;height:28px;border-radius:7px;background:'+(isToday?'var(--orange)':'var(--blue)')+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">'+step.num+'</div>'
+      +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:12px">'+escH(o.client)+'</div>'
+      +'<div style="font-size:10px;color:var(--sub)">'+escH(step.cat)+'</div></div>'
+      +'<div style="font-size:11px;font-weight:700;color:'+(isToday?'var(--orange)':'var(--blue)')+'">'+( isToday?'TODAY':fmtDate(pd))+'</div></div>';
+  }).join(''):'<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px">✅ Nothing due!</div>';
 
-  // Stage breakdown
-  var counts={};STEPS.forEach(function(s){counts[s.key]=orders.filter(function(o){return getCurrentStep(o)===s.key;}).length;});
-  document.getElementById('stageBreak').innerHTML='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">'+
-    STEPS.map(function(s){var c=counts[s.key]||0;return'<div style="background:'+s.bg+';border:1px solid '+s.color+'30;border-radius:8px;padding:10px;text-align:center">'
-    +'<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:'+s.color+';margin-bottom:4px">Step '+s.num+'</div>'
-    +'<div style="font-size:20px;font-weight:800;color:'+s.color+'">'+c+'</div>'
-    +'<div style="font-size:9px;color:var(--dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+s.cat+'</div></div>';}).join('')+'</div>';
+  // ── STEP PROGRESS DONUT ──
+  var stepCounts={prod:0,insp:0,docs:0,logi:0,cust:0,ware:0,deli:0};
+  orders.forEach(function(o){
+    var cs=getCurrentStep(o);var idx=STEPS.findIndex(function(s){return s.key===cs;});
+    if(idx<=4)stepCounts.prod++;else if(idx<=6)stepCounts.insp++;else if(idx<=8)stepCounts.docs++;
+    else if(idx<=11)stepCounts.logi++;else if(idx<=14)stepCounts.cust++;else if(idx<=17)stepCounts.ware++;
+    else stepCounts.deli++;
+  });
+  document.getElementById('stepProgress').innerHTML=[
+    {l:'Production',v:stepCounts.prod,c:'var(--blue)'},
+    {l:'Inspection',v:stepCounts.insp,c:'var(--purple)'},
+    {l:'Documents',v:stepCounts.docs,c:'var(--orange)'},
+    {l:'Logistics',v:stepCounts.logi,c:'var(--gold)'},
+    {l:'Customs',v:stepCounts.cust,c:'var(--cyan)'},
+    {l:'Warehouse',v:stepCounts.ware,c:'var(--teal)'},
+    {l:'Delivery',v:stepCounts.deli,c:'var(--green)'},
+    {l:'Completed',v:completed,c:'var(--green)'},
+  ].map(function(s){return'<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'
+    +'<div style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+s.c+';flex-shrink:0"></div>'
+    +'<div style="flex:1;font-size:11px;color:var(--sub)">'+s.l+'</div>'
+    +'<div style="font-size:16px;font-weight:800;color:'+s.c+'">'+s.v+'</div></div>';}).join('');
+
+  // ── ORDERS TABLE ──
+  document.getElementById('dashOrderBody').innerHTML=orders.length?orders.map(function(o){
+    var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
+    var done=countDoneSteps(o);var pct=Math.round(done/STEPS.length*100);
+    var od=isOrderOverdue(o);var cat=getOrderCategory(o);
+    var statusColor=cat==='completed'?'var(--green)':od?'var(--red)':cat==='transit'?'var(--purple)':cat==='warehouse'?'var(--teal)':'var(--orange)';
+    var statusLabel=cat==='completed'?'✅ Done':od?'⚠ Overdue':cat==='transit'?'🚢 Transit':cat==='warehouse'?'🏭 Warehouse':'⚙ Active';
+    return'<tr onclick="openPipeline(\''+o.id+'\')" style="'+(od?'background:rgba(220,38,38,.02)':'')+'">'
+      +'<td style="padding-left:16px;font-weight:700">'+escH(o.client)+'</td>'
+      +'<td style="font-family:monospace;font-size:10px;color:var(--blue)">'+escH(o.id.substring(0,12))+'</td>'
+      +'<td style="font-size:11px;color:var(--sub)">'+fmtDate(o.startDate)+'</td>'
+      +'<td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(o.details)+'</td>'
+      +'<td><span style="font-size:10px;font-weight:600;background:'+step.bg+';color:'+step.color+';padding:3px 8px;border-radius:6px">'+step.num+': '+escH(step.cat)+'</span></td>'
+      +'<td><div style="display:flex;align-items:center;gap:6px"><div style="width:60px;height:5px;background:var(--border);border-radius:3px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+(pct>=80?'var(--green)':pct>=50?'var(--orange)':'var(--blue)')+'"></div></div><span style="font-size:11px;font-weight:700">'+pct+'%</span></div></td>'
+      +'<td style="font-size:11px;color:var(--sub)">'+getNextActionDate(o)+'</td>'
+      +'<td><span style="font-size:11px;font-weight:700;color:'+statusColor+'">'+statusLabel+'</span></td>'
+      +'</tr>';
+  }).join(''):'<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--dim)">No orders yet</td></tr>';
 }
 
-// ═══════════════════════════════════════════════
-// MIS
-// ═══════════════════════════════════════════════
 function buildMIS(){
   var total=orders.length,done=orders.filter(function(o){return getOrderCategory(o)==='completed';}).length;
   var overdue=orders.filter(isOrderOverdue).length,active=total-done;
@@ -854,7 +1007,9 @@ function buildFlow(o){
           +'<div class="fg"><label class="fl">Time Delay</label><div style="padding-top:8px">'+delBadge+'</div></div>'
         +'</div>'
         +'<div class="sbrow full"><div class="fg"><label class="fl">Notes</label><input class="fi" id="nt-'+step.key+'" value="'+(sd.notes||'').replace(/"/g,'&quot;')+'" placeholder="Notes for this step..." '+(ro?'disabled':'')+'></div></div>'
+        +(step.key==='s08'?buildDocChecklist(sd,ro):'')
         +(!ro&&isActive&&step.key!=='s18'?'<button class="save-step-btn" onclick="saveStepAndAdvance(\''+step.key+'\','+idx+')">💾 Save & Mark as Done → Move to Step '+(idx<19?STEPS[idx+1].num:'Complete')+'</button>':'')
+        +(step.key==='s17'&&isActive&&!ro?'<div style="margin-top:10px;padding:14px;background:var(--purple-bg);border:1.5px solid rgba(124,58,237,.2);border-radius:10px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--purple);margin-bottom:10px">🔍 QC Inspection Result</div>'+buildQCDecision()+'</div>':'')
         +(step.key==='s18'&&isActive&&!ro?buildQCDecision():'')
         +'<div class="step-notes-box"><div class="step-notes-title">📝 Activity Log</div>'+notesHtml+'</div>'
       +'</div>';
@@ -864,6 +1019,48 @@ function buildFlow(o){
     if(idx<STEPS.length-1){
       var conn=document.createElement('div');conn.className='connector';conn.textContent='↓';c.appendChild(conn);
     }
+  });
+}
+
+// Document Checklist for Step 08
+var DOC_CHECKLIST = [
+  {key:'ci',   label:'Commercial Invoice (CI)'},
+  {key:'pl',   label:'Packing List (PL)'},
+  {key:'coo',  label:'Certificate of Origin (COO)'},
+  {key:'fumi', label:'Fumigation Certificate'},
+  {key:'phyto',label:'Phytosanitary Certificate'},
+  {key:'exp',  label:'Export License'},
+  {key:'tqc',  label:'Test / Quality Certificate (if applicable)'},
+];
+
+function buildDocChecklist(sd, ro) {
+  var docs = sd.docs || {};
+  var allDone = DOC_CHECKLIST.every(function(d){ return docs[d.key]; });
+  var doneCnt = DOC_CHECKLIST.filter(function(d){ return docs[d.key]; }).length;
+  return '<div style="margin-top:10px;padding:14px;background:#F0F9FF;border:1.5px solid rgba(7,89,133,.2);border-radius:10px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      +'<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#075985">📋 Document Checklist</div>'
+      +'<span style="padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+(allDone?'var(--green-bg)':'var(--orange-bg)')+';color:'+(allDone?'var(--green)':'var(--orange)')+'">'+doneCnt+'/'+DOC_CHECKLIST.length+' Collected</span>'
+    +'</div>'
+    +DOC_CHECKLIST.map(function(d){
+      var checked = docs[d.key] ? true : false;
+      return '<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:'+(checked?'var(--green-bg)':'#fff')+';border:1px solid '+(checked?'rgba(5,150,105,.2)':'var(--border)')+';margin-bottom:6px;cursor:'+(ro?'default':'pointer')+';transition:all .15s">'
+        +'<input type="checkbox" id="doc-'+d.key+'" '+(checked?'checked':'')+' '+(ro?'disabled':'')+' onchange="toggleDoc(\''+d.key+'\')" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer;flex-shrink:0">'
+        +'<span style="font-size:12px;font-weight:'+(checked?'600':'400')+';color:'+(checked?'var(--green)':'var(--text)')+'">'+d.label+'</span>'
+        +(checked?'<span style="margin-left:auto;font-size:10px;font-weight:700;color:var(--green)">✓ Collected</span>':'')
+      +'</label>';
+    }).join('')
+  +'</div>';
+}
+
+function toggleDoc(docKey) {
+  var o = getOrder(); if(!o) return;
+  if(!o.pipeline.s08.docs) o.pipeline.s08.docs = {};
+  var el = document.getElementById('doc-'+docKey);
+  o.pipeline.s08.docs[docKey] = el ? el.checked : false;
+  savePipe(function(){
+    showToast(el.checked ? '✓ '+docKey.toUpperCase()+' marked collected' : docKey.toUpperCase()+' unchecked', el.checked?'s':'i');
+    openPipeline(viewingId);
   });
 }
 
@@ -906,6 +1103,7 @@ function saveStepAndAdvance(stepKey, idx){
       o.pipeline[nextStep.key].planned=addDays(actualDate,nextStep.addDays);
     }
   } else {
+    // Last step (s20) done — mark order complete
     o.pipeline.currentStep='done';
   }
   savePipe(function(){buildAll();showToast('✓ Step '+STEPS[idx].num+' done! Moved to Step '+(idx<STEPS.length-1?STEPS[idx+1].num:'Complete'),'s');openPipeline(viewingId);});
@@ -913,11 +1111,21 @@ function saveStepAndAdvance(stepKey, idx){
 
 function qcResult(result){
   var o=getOrder();if(!o)return;
-  var acEl=document.getElementById('ac-s18');
-  var actualDate=(acEl&&acEl.value)?acEl.value:today();
+  // Works from both s17 and s18 — use whichever actual date is filled
+  var acEl17=document.getElementById('ac-s17');
+  var acEl18=document.getElementById('ac-s18');
+  var actualDate=(acEl17&&acEl17.value)?acEl17.value:(acEl18&&acEl18.value)?acEl18.value:today();
+
+  // Mark s17 done if currently on s17
+  if(o.pipeline.currentStep==='s17'){
+    o.pipeline.s17.actual=actualDate;
+    o.pipeline.s17.status='done';
+  }
+  // Mark s18 done (skip to it)
   o.pipeline.s18.actual=actualDate;
   o.pipeline.s18.status='done';
   o.pipeline.qcResult=result;
+
   if(result==='pass'){
     o.pipeline.currentStep='s19';
     o.pipeline.s19.planned=addDays(actualDate,2);
