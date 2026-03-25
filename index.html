@@ -958,7 +958,13 @@ function buildFlow(o){
   var c=document.getElementById('flowSteps');c.innerHTML='';
   var cs=p.currentStep||'s01';
   var csIdx=STEPS.findIndex(function(s){return s.key===cs;});
-  var ro=READ_ONLY.includes(currentRole);
+  // Role-based permissions:
+  // owner  → sab edit kar sakta hai (planned + actual + notes)
+  // scm    → sirf active step par "Mark Done" button dikhta hai, actual auto-fill hoti hai, planned/notes edit nahi
+  // pc     → sirf read-only, kuch bhi nahi
+  var isOwner = currentRole === 'owner';
+  var ro = READ_ONLY.includes(currentRole); // pc = true
+  var canEdit = isOwner; // sirf owner sab edit kar sakta hai
 
   STEPS.forEach(function(step,idx){
     var sd=p[step.key]||{planned:'',actual:'',status:'pending',notes:'',notesLog:[]};
@@ -986,6 +992,9 @@ function buildFlow(o){
       return'<div class="note-item"><span class="note-time">'+n.ts+'</span>'+escH(n.text)+'</div>';
     }).join(''):'<div style="color:var(--dim);font-size:11px">No notes yet</div>';
 
+    // Auto-filled actual date for non-owner (aaj ki date, readonly)
+    var actualDateDisplay = sd.actual || (isActive && !isOwner ? today() : '');
+
     card.innerHTML=
       '<div class="step-head" onclick="toggleStep(this)">'
         +'<div class="shl">'
@@ -1002,13 +1011,29 @@ function buildFlow(o){
       +'</div>'
       +'<div class="step-body">'
         +'<div class="sbrow">'
-          +'<div class="fg"><label class="fl">Planned Date</label><input class="fi" type="date" id="pl-'+step.key+'" value="'+(sd.planned||'')+'" '+(ro?'disabled':'')+'></div>'
-          +'<div class="fg"><label class="fl">Actual Date</label><input class="fi" type="date" id="ac-'+step.key+'" value="'+(sd.actual||'')+'" '+(ro?'disabled':'')+'></div>'
+          // Planned date: sirf Owner edit kar sakta hai
+          +'<div class="fg"><label class="fl">Planned Date</label><input class="fi" type="date" id="pl-'+step.key+'" value="'+(sd.planned||'')+'" '+(canEdit?'':'disabled')+'></div>'
+          // Actual date: Owner edit kar sakta hai, baaki ke liye auto-fill (aaj ki date) + readonly
+          +(canEdit
+            ? '<div class="fg"><label class="fl">Actual Date</label><input class="fi" type="date" id="ac-'+step.key+'" value="'+(sd.actual||'')+'" ></div>'
+            : (isActive && !ro
+                ? '<div class="fg"><label class="fl">Actual Date <span style="font-size:9px;color:var(--green)">(Auto: Today)</span></label><input class="fi" type="date" id="ac-'+step.key+'" value="'+actualDateDisplay+'" disabled style="background:var(--green-bg);border-color:rgba(5,150,105,.3);color:var(--green)"></div>'
+                : '<div class="fg"><label class="fl">Actual Date</label><input class="fi" type="date" id="ac-'+step.key+'" value="'+(sd.actual||'')+'" disabled></div>'
+              )
+          )
           +'<div class="fg"><label class="fl">Time Delay</label><div style="padding-top:8px">'+delBadge+'</div></div>'
         +'</div>'
-        +'<div class="sbrow full"><div class="fg"><label class="fl">Notes</label><input class="fi" id="nt-'+step.key+'" value="'+(sd.notes||'').replace(/"/g,'&quot;')+'" placeholder="Notes for this step..." '+(ro?'disabled':'')+'></div></div>'
+        // Notes: Owner = hamesha edit, SCM = sirf pehli baar (agar pehle se notes nahi hain), PC = disabled
+        +(function(){
+          var notesAlreadySaved = sd.notes && sd.notes.trim().length > 0;
+          var notesDisabled = ro ? 'disabled' : (isOwner ? '' : (notesAlreadySaved ? 'disabled title="Notes already saved — only Owner can edit"' : ''));
+          var notesStyle = (!isOwner && notesAlreadySaved) ? 'style="background:#FFF8E6;border-color:#F0D080;cursor:not-allowed"' : '';
+          var notesLabel = (!isOwner && notesAlreadySaved) ? 'Notes <span style="font-size:9px;color:var(--orange);font-weight:600">(Locked — Owner only)</span>' : 'Notes';
+          return '<div class="sbrow full"><div class="fg"><label class="fl">'+notesLabel+'</label><input class="fi" id="nt-'+step.key+'" value="'+(sd.notes||'').replace(/"/g,'&quot;')+'" placeholder="Add notes for this step..." '+notesDisabled+' '+notesStyle+'></div></div>';
+        })()
         +(step.key==='s08'?buildDocChecklist(sd,ro):'')
-        +(!ro&&isActive&&step.key!=='s18'?'<button class="save-step-btn" onclick="saveStepAndAdvance(\''+step.key+'\','+idx+')">💾 Save & Mark as Done → Move to Step '+(idx<19?STEPS[idx+1].num:'Complete')+'</button>':'')
+        // Save button: Owner + SCM dono dekh sakte hain (active step par)
+        +(!ro&&isActive&&step.key!=='s18'?'<button class="save-step-btn" onclick="saveStepAndAdvance(\''+step.key+'\','+idx+')">💾 Mark as Done → Move to Step '+(idx<19?STEPS[idx+1].num:'Complete')+'</button>':'')
         +(step.key==='s17'&&isActive&&!ro?'<div style="margin-top:10px;padding:14px;background:var(--purple-bg);border:1.5px solid rgba(124,58,237,.2);border-radius:10px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--purple);margin-bottom:10px">🔍 QC Inspection Result</div>'+buildQCDecision()+'</div>':'')
         +(step.key==='s18'&&isActive&&!ro?buildQCDecision():'')
         +'<div class="step-notes-box"><div class="step-notes-title">📝 Activity Log</div>'+notesHtml+'</div>'
@@ -1081,29 +1106,56 @@ function buildQCDecision(){
 
 function saveStepAndAdvance(stepKey, idx){
   var o=getOrder();if(!o)return;
+  var isOwner = currentRole === 'owner';
   var acEl=document.getElementById('ac-'+stepKey);
   var plEl=document.getElementById('pl-'+stepKey);
   var ntEl=document.getElementById('nt-'+stepKey);
-  var actualDate=(acEl&&acEl.value)?acEl.value:today();
-  if(plEl&&plEl.value) o.pipeline[stepKey].planned=plEl.value;
-  o.pipeline[stepKey].actual=actualDate;
-  o.pipeline[stepKey].status='done';
-  if(ntEl&&ntEl.value){
-    o.pipeline[stepKey].notes=ntEl.value;
+
+  // Actual date:
+  // Owner → jo date daali hai woh use karo
+  // Baaki → aaj ki date auto use karo (disabled field ignore)
+  var actualDate = isOwner ? ((acEl&&acEl.value)?acEl.value:today()) : today();
+
+  // Planned date: sirf Owner update kar sakta hai
+  if(isOwner && plEl && plEl.value){
+    o.pipeline[stepKey].planned = plEl.value;
+  }
+
+  o.pipeline[stepKey].actual = actualDate;
+  o.pipeline[stepKey].status = 'done';
+
+  // Notes: Owner hamesha update kar sakta hai, SCM sirf pehli baar (agar pehle se blank hai)
+  var notesAlreadySaved = o.pipeline[stepKey].notes && o.pipeline[stepKey].notes.trim().length > 0;
+  if(ntEl && ntEl.value && (isOwner || (!notesAlreadySaved && currentRole === 'scm'))){
+    o.pipeline[stepKey].notes = ntEl.value;
     if(!o.pipeline[stepKey].notesLog) o.pipeline[stepKey].notesLog=[];
     var now=new Date();
-    o.pipeline[stepKey].notesLog.push({text:ntEl.value,ts:now.getDate()+' '+MON[now.getMonth()]+' '+String(now.getFullYear()).slice(2)+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')});
+    o.pipeline[stepKey].notesLog.push({
+      text:ntEl.value,
+      ts:now.getDate()+' '+MON[now.getMonth()]+' '+String(now.getFullYear()).slice(2)+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'),
+      by: ROLE_LABELS[currentRole]||currentRole
+    });
   }
+
+  // Activity log — role + time record karo
+  if(!o.pipeline[stepKey].notesLog) o.pipeline[stepKey].notesLog=[];
+  var now2=new Date();
+  var ts2=now2.getDate()+' '+MON[now2.getMonth()]+' '+String(now2.getFullYear()).slice(2)+' '+String(now2.getHours()).padStart(2,'0')+':'+String(now2.getMinutes()).padStart(2,'0');
+  o.pipeline[stepKey].notesLog.push({
+    text:'Step marked as done on '+actualDate,
+    ts: ts2,
+    by: ROLE_LABELS[currentRole]||currentRole
+  });
+
   // Advance to next step
   if(idx<STEPS.length-1){
     var nextStep=STEPS[idx+1];
     o.pipeline.currentStep=nextStep.key;
-    // Set next planned date from actual + addDays
     if(!o.pipeline[nextStep.key].actual){
       o.pipeline[nextStep.key].planned=addDays(actualDate,nextStep.addDays);
     }
   } else {
-    // Last step (s20) done — mark order complete
+    // Last step done
     o.pipeline.currentStep='done';
   }
   savePipe(function(){buildAll();showToast('✓ Step '+STEPS[idx].num+' done! Moved to Step '+(idx<STEPS.length-1?STEPS[idx+1].num:'Complete'),'s');openPipeline(viewingId);});
