@@ -456,7 +456,7 @@ var BASE_STEPS = [
   {key:'s14', num:'14', cat:'Customs',     title:'Follow Up with CHA for Customs Clearance Status and Duty Payment',      addDays:4,  color:'#134E4A', bg:'#F0FDFA'},
   {key:'s15', num:'15', cat:'Customs',     title:'Follow Up with CHA for Goods Release and Arrange Delivery to Warehouse', addDays:1,  color:'#134E4A', bg:'#F0FDFA'},
   {key:'s16', num:'16', cat:'Warehouse',   title:'Follow Up with Warehouse to Confirm Product Receipt',                   addDays:1,  color:'#7F1D1D', bg:'#FEF2F2'},
-  {key:'s17', num:'17', cat:'QC',          title:'Follow Up with Warehouse Manager for Product QC Status',                addDays:2, color:'#4C1D95', bg:'#F5F3FF'},
+  {key:'s17', num:'17', cat:'QC',          title:'Follow Up with Warehouse Manager for Product QC Status',                addDays:2,  color:'#4C1D95', bg:'#F5F3FF'},
   {key:'s18', num:'18', cat:'QC Decision', title:'QC Inspection Result — Pass or Fail',                                   addDays:2,  color:'#4C1D95', bg:'#F5F3FF'},
   // s18r = repair step (only added when QC fails)
   {key:'s19', num:'19', cat:'Delivery',    title:'Proceed to Final Delivery and Dispatch the Product to the Client',      addDays:3,  color:'#064E3B', bg:'#ECFDF5'},
@@ -1031,11 +1031,9 @@ function buildFlow(o){
     var actualDateDisplay = sd.actual || (isActive && !isOwner ? today() : '');
 
     // ── OWNER EDIT: Planned date field ──
-    // Owner can always change planned date even on done steps
     var plannedField;
     if(canEdit){
-      plannedField='<div class="fg"><label class="fl">Planned Date'
-        +(isDone?'':'')+' <span style="font-size:9px;color:var(--blue);font-weight:600">(Editable)</span></label>'
+      plannedField='<div class="fg"><label class="fl">Planned Date <span style="font-size:9px;color:var(--blue);font-weight:600">(Editable)</span></label>'
         +'<input class="fi" type="date" id="pl-'+step.key+'" value="'+(sd.planned||'')+'">'
         +'</div>';
     } else {
@@ -1060,10 +1058,12 @@ function buildFlow(o){
         +'</div>';
     }
 
-    // ── OWNER EDIT SAVE BUTTON for already-done steps ──
+    // ── OWNER BUTTONS: Save changes + Reactivate (for done steps) ──
     var ownerEditBtn='';
     if(isOwner && isDone){
-      ownerEditBtn='<button class="save-step-btn" style="background:var(--gold);margin-top:6px" onclick="ownerSaveStepEdit(\''+step.key+'\')">💾 Save Changes (Dates & Notes)</button>';
+      ownerEditBtn=
+        '<button class="save-step-btn" style="background:var(--gold);margin-top:6px" onclick="ownerSaveStepEdit(\''+step.key+'\')">💾 Save Changes (Dates & Notes)</button>'
+        +'<button class="save-step-btn" style="background:var(--orange);margin-top:6px" onclick="reactivateStep(\''+step.key+'\','+idx+')">🔄 Reactivate This Step</button>';
     }
 
     // Notes field
@@ -1110,6 +1110,49 @@ function buildFlow(o){
     if(idx<steps.length-1){
       var conn=document.createElement('div');conn.className='connector';conn.textContent='↓';c.appendChild(conn);
     }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// OWNER: Reactivate a done step
+// ═══════════════════════════════════════════════
+function reactivateStep(stepKey, idx){
+  if(currentRole !== 'owner'){showToast('Only Owner can reactivate steps','e');return;}
+  var o=getOrder();if(!o)return;
+  var steps=getSteps(o);
+  var step=steps[idx];
+  if(!confirm('⚠ Reactivate Step '+step.num+' ('+step.cat+')?\n\nIs step aur iske baad ke saare steps ki actual dates clear ho jaayengi.'))return;
+
+  // Is step se aage ke saare steps clear karo
+  for(var i=idx;i<steps.length;i++){
+    var sk=steps[i].key;
+    if(o.pipeline[sk]){
+      o.pipeline[sk].actual='';
+      o.pipeline[sk].status='pending';
+    }
+  }
+
+  // Agar repair step ke barabar ya pehle hai toh repairNeeded bhi reset karo
+  var s18idx=steps.findIndex(function(s){return s.key==='s18';});
+  if(idx <= s18idx){
+    o.pipeline.repairNeeded=false;
+    o.pipeline.qcResult='';
+    o.pipeline[REPAIR_STEP.key]={planned:'',actual:'',status:'pending',notes:'',notesLog:[]};
+  }
+
+  // currentStep wapas is step pe laao
+  o.pipeline.currentStep=stepKey;
+
+  // Activity log
+  if(!o.pipeline[stepKey].notesLog) o.pipeline[stepKey].notesLog=[];
+  var now=new Date();
+  var ts=now.getDate()+' '+MON[now.getMonth()]+' '+String(now.getFullYear()).slice(2)+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  o.pipeline[stepKey].notesLog.push({text:'🔄 Step reactivated by Owner — previous completion cleared', ts:ts, by:ROLE_LABELS['owner']});
+
+  savePipe(function(){
+    buildAll();
+    showToast('✓ Step '+step.num+' reactivated! Aage ke steps bhi clear ho gaye','s');
+    openPipeline(viewingId);
   });
 }
 
