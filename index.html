@@ -148,6 +148,7 @@ td{padding:10px 12px;vertical-align:middle}
 .step-card.active-step{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
 .step-card.done-step{border-color:rgba(5,150,105,.4);background:#FAFFFE}
 .step-card.overdue-step{border-color:rgba(220,38,38,.4);background:#FFFAFA}
+.step-card.repair-step{border-color:rgba(220,38,38,.5);background:#FFF5F5}
 .step-card.locked{opacity:.4;pointer-events:none}
 .step-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--bg);cursor:pointer;transition:background .15s;border-bottom:1px solid transparent}
 .step-card.open .step-head{border-bottom-color:var(--border)}.step-head:hover{background:var(--blue-bg)}
@@ -436,14 +437,14 @@ var orders = [], currentRole = null, viewingId = null, editingId = null, activeF
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 // ═══════════════════════════════════════════════
-// STEP DEFINITIONS — All 20 steps
+// STEP DEFINITIONS — All 20 steps + optional repair step
 // ═══════════════════════════════════════════════
-var STEPS = [
+var BASE_STEPS = [
   {key:'s01', num:'01', cat:'Purchase',    title:'Issue Purchase Order (PO) to Supplier / Production Manager',            addDays:1,  color:'#1D4ED8', bg:'#EFF6FF'},
   {key:'s02', num:'02', cat:'Finance',     title:'Arrange Payment as per Agreed Terms (Advance / TT / LC) & Share Payment Confirmation with Supplier', addDays:2,  color:'#92400E', bg:'#FEF3C7'},
   {key:'s03', num:'03', cat:'Design',      title:'Production Drawing',                                                    addDays:3,  color:'#6B21A8', bg:'#F3E8FF'},
   {key:'s04', num:'04', cat:'Approval',    title:'Production Drawing Approval from the Client',                           addDays:5,  color:'#065F46', bg:'#ECFDF5'},
-  {key:'s05', num:'05', cat:'Confirmation','title':'Send Official Confirmation to the Vendor to Begin Production Based on the Approved Technical Drawing and Finalized Specifications', addDays:1,  color:'#9A3412', bg:'#FFF7ED'},
+  {key:'s05', num:'05', cat:'Confirmation',title:'Send Official Confirmation to the Vendor to Begin Production Based on the Approved Technical Drawing and Finalized Specifications', addDays:1,  color:'#9A3412', bg:'#FFF7ED'},
   {key:'s06', num:'06', cat:'Inspection',  title:'Mid Production Inspection — 5 Angle Images & 360° HD Video',           addDays:28, color:'#065F46', bg:'#F0FDF4'},
   {key:'s07', num:'07', cat:'QC',          title:'Inspect the Finished Product Packaging to Ensure Quality, Design, and Specifications are Correct — 5 Angle Images & 360° HD Video', addDays:22, color:'#134E4A', bg:'#F0FDFA'},
   {key:'s08', num:'08', cat:'Documents',   title:'Collect All Required Pre-Shipment Documents (Commercial Invoice, Packing List, Certificate of Origin, Fumigation Certificate, Phytosanitary Certificate, Export License, Test/Quality Certificate if applicable)', addDays:3,  color:'#075985', bg:'#F0F9FF'},
@@ -457,15 +458,46 @@ var STEPS = [
   {key:'s16', num:'16', cat:'Warehouse',   title:'Follow Up with Warehouse to Confirm Product Receipt',                   addDays:1,  color:'#7F1D1D', bg:'#FEF2F2'},
   {key:'s17', num:'17', cat:'QC',          title:'Follow Up with Warehouse Manager for Product QC Status',                addDays:12, color:'#4C1D95', bg:'#F5F3FF'},
   {key:'s18', num:'18', cat:'QC Decision', title:'QC Inspection Result — Pass or Fail',                                   addDays:2,  color:'#4C1D95', bg:'#F5F3FF'},
+  // s18r = repair step (only added when QC fails)
   {key:'s19', num:'19', cat:'Delivery',    title:'Proceed to Final Delivery and Dispatch the Product to the Client',      addDays:3,  color:'#064E3B', bg:'#ECFDF5'},
-  {key:'s20', num:'20', cat:'Confirmation','title':'Follow Up with Warehouse Manager to Confirm Whether the Product Has Been Dispatched and Installed at the Client Site', addDays:1,  color:'#064E3B', bg:'#ECFDF5'},
+  {key:'s20', num:'20', cat:'Confirmation',title:'Follow Up with Warehouse Manager to Confirm Whether the Product Has Been Dispatched and Installed at the Client Site', addDays:1,  color:'#064E3B', bg:'#ECFDF5'},
 ];
+
+// Repair step definition
+var REPAIR_STEP = {key:'s18r', num:'18R', cat:'Repair', title:'Arrange Repair Team to Fix the Issue During QC Inspection', addDays:0, color:'#DC2626', bg:'#FEF2F2', isRepair:true};
+
+// Get STEPS for an order (with or without repair step)
+function getSteps(order) {
+  var p = order && order.pipeline;
+  if (p && p.repairNeeded) {
+    var steps = [];
+    BASE_STEPS.forEach(function(s) {
+      steps.push(s);
+      if (s.key === 's18') steps.push(REPAIR_STEP);
+    });
+    return steps;
+  }
+  return BASE_STEPS;
+}
 
 // ═══════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════
 function today(){return new Date().toISOString().split('T')[0];}
 function addDays(d,n){var x=new Date(d||today());x.setDate(x.getDate()+n);return x.toISOString().split('T')[0];}
+
+// Add N working days (skip Saturday=6, Sunday=0)
+function addWorkingDays(d, n) {
+  var x = new Date(d || today());
+  var added = 0;
+  while (added < n) {
+    x.setDate(x.getDate() + 1);
+    var day = x.getDay();
+    if (day !== 0 && day !== 6) added++;
+  }
+  return x.toISOString().split('T')[0];
+}
+
 function fmtDate(d){if(!d)return'—';var x=new Date(d);return x.getDate()+' '+MON[x.getMonth()]+' '+String(x.getFullYear()).slice(2);}
 function daysDiff(a,b){return Math.ceil((new Date(b)-new Date(a))/86400000);}
 function escH(t){if(!t)return'';return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -475,11 +507,13 @@ function initPipeline(startDate){
   var d = startDate || today();
   var pipe = {currentStep:'s01', startDate:d, repairNeeded:false, qcResult:''};
   var prev = d;
-  STEPS.forEach(function(s,i){
+  BASE_STEPS.forEach(function(s,i){
     var planned = i===0 ? addDays(d,1) : addDays(prev,s.addDays);
     pipe[s.key] = {planned:planned, actual:'', status:'pending', notes:'', notesLog:[]};
     prev = planned;
   });
+  // Init repair step slot (empty by default)
+  pipe[REPAIR_STEP.key] = {planned:'', actual:'', status:'pending', notes:'', notesLog:[]};
   return pipe;
 }
 
@@ -521,12 +555,12 @@ function isDueThisWeek(order){
 function getOrderCategory(order){
   var cs = getCurrentStep(order);
   var p = order.pipeline || {};
-  // Completed: s20 actual filled OR currentStep = 'done' OR all 20 steps done
   if(cs === 'done') return 'completed';
   if(p.s20 && p.s20.actual) return 'completed';
+  var steps = getSteps(order);
   var doneCount = countDoneSteps(order);
-  if(doneCount >= 20) return 'completed';
-  var idx = STEPS.findIndex(function(s){return s.key===cs;});
+  if(doneCount >= steps.length) return 'completed';
+  var idx = steps.findIndex(function(s){return s.key===cs;});
   if(idx >= 12 && idx <= 14) return 'transit';
   if(idx >= 15 && idx <= 16) return 'warehouse';
   return 'active';
@@ -534,7 +568,8 @@ function getOrderCategory(order){
 
 function countDoneSteps(order){
   if(!order.pipeline) return 0;
-  return STEPS.filter(function(s){return order.pipeline[s.key] && order.pipeline[s.key].actual;}).length;
+  var steps = getSteps(order);
+  return steps.filter(function(s){return order.pipeline[s.key] && order.pipeline[s.key].actual;}).length;
 }
 
 function getNextActionDate(order){
@@ -561,7 +596,10 @@ function loadData(){
   sbFetch('/sc_orders?order=created_at.asc','GET')
     .then(function(rows){
       orders=(rows||[]).map(function(r){
-        return {id:r.id, client:r.client, phone:r.phone, address:r.address, details:r.details, qty:r.qty||'', remarks:r.remarks||'', startDate:r.start_date||'', pipeline:r.pipeline||initPipeline(r.start_date)};
+        var pipe = r.pipeline || initPipeline(r.start_date);
+        // Ensure repair step slot exists in old records
+        if(!pipe[REPAIR_STEP.key]) pipe[REPAIR_STEP.key]={planned:'',actual:'',status:'pending',notes:'',notesLog:[]};
+        return {id:r.id, client:r.client, phone:r.phone, address:r.address, details:r.details, qty:r.qty||'', remarks:r.remarks||'', startDate:r.start_date||'', pipeline:pipe};
       });
       setSS('saved','✓ Synced');
       buildAll();
@@ -656,7 +694,6 @@ function buildDash(){
   document.getElementById('dk0').textContent=total;
   document.getElementById('dk1').textContent=active;
   document.getElementById('dk1s').textContent=active>0?'Action needed':'All clear ✓';
-  document.getElementById('dk1s').className='kpi-sub '+(active>0?'':'');
   document.getElementById('dk2').textContent=overdue;
   document.getElementById('dk2s').textContent=overdue>0?'⚠ Needs attention':'On track ✓';
   document.getElementById('dk2s').style.color=overdue>0?'var(--red)':'var(--green)';
@@ -667,14 +704,13 @@ function buildDash(){
   document.getElementById('alertPill').textContent='⚠ '+overdue+' Overdue';
 
   // ── FUNNEL ──
-  var stageKeys=['s01','s02','s03','s04','s05','s06','s07','s08','s09','s10','s11','s12','s13','s14','s15','s16','s17','s18','s19','s20'];
   var funnelStages=[
     {l:'Production',  col:'#2563EB', keys:['s01','s02','s03','s04','s05']},
     {l:'Inspection',  col:'#7C3AED', keys:['s06','s07']},
     {l:'Documents',   col:'#D97706', keys:['s08','s09']},
     {l:'Logistics',   col:'#C8930A', keys:['s10','s11','s12']},
     {l:'Customs',     col:'#0891B2', keys:['s13','s14','s15']},
-    {l:'Warehouse',   col:'#0F766E', keys:['s16','s17','s18']},
+    {l:'Warehouse',   col:'#0F766E', keys:['s16','s17','s18','s18r']},
     {l:'Delivery',    col:'#059669', keys:['s19','s20']},
   ];
   var cr=total>0?Math.round((completed/total)*100):0;
@@ -696,7 +732,7 @@ function buildDash(){
   document.getElementById('hotBadge').textContent=hot.length+' items';
   document.getElementById('hotlist').innerHTML=hot.length?hot.slice(0,7).map(function(o){
     var od=isOrderOverdue(o);
-    var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
+    var cs=getCurrentStep(o);var steps=getSteps(o);var si=steps.findIndex(function(s){return s.key===cs;});var step=steps[si]||steps[0];
     var pd=o.pipeline&&o.pipeline[cs]?o.pipeline[cs].planned:'';
     var dd=pd?daysDiff(pd,today()):0;
     return'<div class="hot-item '+(od?'ov':'td2')+'" onclick="openPipeline(\''+o.id+'\')">'
@@ -707,14 +743,14 @@ function buildDash(){
       +'<div style="font-size:9px;color:var(--dim);margin-top:1px">'+fmtDate(pd)+'</div></div></div>';
   }).join(''):'<div style="text-align:center;padding:24px;color:var(--dim);font-size:12px">🎉 All clear!</div>';
 
-  // ── STAGE BREAKDOWN (compact list) ──
+  // ── STAGE BREAKDOWN ──
   var stageSummary=[
     {icon:'📦',name:'Production (S01-S05)',col:'var(--blue)',  keys:['s01','s02','s03','s04','s05']},
     {icon:'🔍',name:'Inspection (S06-S07)', col:'var(--purple)',keys:['s06','s07']},
     {icon:'📄',name:'Documents (S08-S09)',  col:'var(--orange)',keys:['s08','s09']},
     {icon:'🚢',name:'Logistics (S10-S12)', col:'var(--gold)',  keys:['s10','s11','s12']},
     {icon:'🛃',name:'Customs (S13-S15)',    col:'var(--cyan)',  keys:['s13','s14','s15']},
-    {icon:'🏭',name:'Warehouse (S16-S18)', col:'var(--teal)',  keys:['s16','s17','s18']},
+    {icon:'🏭',name:'Warehouse (S16-S18)', col:'var(--teal)',  keys:['s16','s17','s18','s18r']},
     {icon:'✅',name:'Delivery (S19-S20)',   col:'var(--green)', keys:['s19','s20']},
   ];
   document.getElementById('stageBreak').innerHTML=stageSummary.map(function(sg){
@@ -735,7 +771,7 @@ function buildDash(){
   });
   document.getElementById('odBadge').textContent=odList.length;
   document.getElementById('overdueList').innerHTML=odList.length?odList.map(function(o){
-    var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
+    var cs=getCurrentStep(o);var steps=getSteps(o);var si=steps.findIndex(function(s){return s.key===cs;});var step=steps[si]||steps[0];
     var pd=o.pipeline&&o.pipeline[cs]?o.pipeline[cs].planned:'';var dd=pd?daysDiff(pd,today()):0;
     return'<div onclick="openPipeline(\''+o.id+'\')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--red-bg);border:1px solid rgba(220,38,38,.15);margin-bottom:6px;cursor:pointer">'
       +'<div style="width:28px;height:28px;border-radius:7px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">'+step.num+'</div>'
@@ -749,22 +785,23 @@ function buildDash(){
   var dtw=orders.filter(function(o){return !isOrderOverdue(o)&&isDueThisWeek(o);});
   document.getElementById('weekBadge').textContent=dtw.length;
   document.getElementById('dueTodayList').innerHTML=dtw.length?dtw.map(function(o){
-    var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
+    var cs=getCurrentStep(o);var steps=getSteps(o);var si=steps.findIndex(function(s){return s.key===cs;});var step=steps[si]||steps[0];
     var pd=o.pipeline&&o.pipeline[cs]?o.pipeline[cs].planned:'';
-    var isToday=pd===today();
-    return'<div onclick="openPipeline(\''+o.id+'\')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:'+(isToday?'var(--orange-bg)':'var(--blue-bg)')+';border:1px solid '+(isToday?'rgba(217,119,6,.2)':'rgba(37,99,235,.15)')+';margin-bottom:6px;cursor:pointer">'
-      +'<div style="width:28px;height:28px;border-radius:7px;background:'+(isToday?'var(--orange)':'var(--blue)')+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">'+step.num+'</div>'
+    var isToday2=pd===today();
+    return'<div onclick="openPipeline(\''+o.id+'\')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:'+(isToday2?'var(--orange-bg)':'var(--blue-bg)')+';border:1px solid '+(isToday2?'rgba(217,119,6,.2)':'rgba(37,99,235,.15)')+';margin-bottom:6px;cursor:pointer">'
+      +'<div style="width:28px;height:28px;border-radius:7px;background:'+(isToday2?'var(--orange)':'var(--blue)')+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">'+step.num+'</div>'
       +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:12px">'+escH(o.client)+'</div>'
       +'<div style="font-size:10px;color:var(--sub)">'+escH(step.cat)+'</div></div>'
-      +'<div style="font-size:11px;font-weight:700;color:'+(isToday?'var(--orange)':'var(--blue)')+'">'+( isToday?'TODAY':fmtDate(pd))+'</div></div>';
+      +'<div style="font-size:11px;font-weight:700;color:'+(isToday2?'var(--orange)':'var(--blue)')+'">'+( isToday2?'TODAY':fmtDate(pd))+'</div></div>';
   }).join(''):'<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px">✅ Nothing due!</div>';
 
-  // ── STEP PROGRESS DONUT ──
+  // ── STEP PROGRESS ──
   var stepCounts={prod:0,insp:0,docs:0,logi:0,cust:0,ware:0,deli:0};
   orders.forEach(function(o){
-    var cs=getCurrentStep(o);var idx=STEPS.findIndex(function(s){return s.key===cs;});
+    var cs=getCurrentStep(o);var steps=getSteps(o);var idx=steps.findIndex(function(s){return s.key===cs;});
     if(idx<=4)stepCounts.prod++;else if(idx<=6)stepCounts.insp++;else if(idx<=8)stepCounts.docs++;
-    else if(idx<=11)stepCounts.logi++;else if(idx<=14)stepCounts.cust++;else if(idx<=17)stepCounts.ware++;
+    else if(idx<=11)stepCounts.logi++;else if(idx<=14)stepCounts.cust++;
+    else if(cs==='s18r'||idx<=17)stepCounts.ware++;
     else stepCounts.deli++;
   });
   document.getElementById('stepProgress').innerHTML=[
@@ -783,8 +820,8 @@ function buildDash(){
 
   // ── ORDERS TABLE ──
   document.getElementById('dashOrderBody').innerHTML=orders.length?orders.map(function(o){
-    var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
-    var done=countDoneSteps(o);var pct=Math.round(done/STEPS.length*100);
+    var cs=getCurrentStep(o);var steps=getSteps(o);var si=steps.findIndex(function(s){return s.key===cs;});var step=steps[si]||steps[0];
+    var done=countDoneSteps(o);var totalSteps=steps.length;var pct=Math.round(done/totalSteps*100);
     var od=isOrderOverdue(o);var cat=getOrderCategory(o);
     var statusColor=cat==='completed'?'var(--green)':od?'var(--red)':cat==='transit'?'var(--purple)':cat==='warehouse'?'var(--teal)':'var(--orange)';
     var statusLabel=cat==='completed'?'✅ Done':od?'⚠ Overdue':cat==='transit'?'🚢 Transit':cat==='warehouse'?'🏭 Warehouse':'⚙ Active';
@@ -812,10 +849,10 @@ function buildMIS(){
   ].map(function(c){return'<div class="mis-card '+c.c+'"><div class="mis-lbl">'+c.l+'</div><div class="mis-val">'+c.v+'</div><div class="mis-sub">'+c.s+'</div></div>';}).join('');
 
   document.getElementById('misBody').innerHTML=orders.length?orders.map(function(o){
-    var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
-    var doneCount=countDoneSteps(o),total=STEPS.length,pct=Math.round(doneCount/total*100);
-    var overdueSteps=STEPS.filter(function(s){return getStepStatus(o,s.key)==='overdue';}).length;
-    var delayPct=total>0?Math.round(overdueSteps/total*100):0;
+    var cs=getCurrentStep(o);var steps=getSteps(o);var si=steps.findIndex(function(s){return s.key===cs;});var step=steps[si]||steps[0];
+    var doneCount=countDoneSteps(o),totalSteps=steps.length,pct=Math.round(doneCount/totalSteps*100);
+    var overdueSteps=steps.filter(function(s){return getStepStatus(o,s.key)==='overdue';}).length;
+    var delayPct=totalSteps>0?Math.round(overdueSteps/totalSteps*100):0;
     var score=Math.round(pct*0.7+Math.max(0,100-delayPct)*0.3);
     var sc=score>=80?'sb-ex':score>=60?'sb-gd':score>=40?'sb-av':'sb-pr';
     var sl=score>=80?'On Track':score>=60?'Good':score>=40?'Delayed':'Critical';
@@ -824,7 +861,7 @@ function buildMIS(){
       +'<td style="padding-left:16px;font-family:monospace;font-size:11px;color:var(--dim)">'+escH(o.id.substring(0,14))+'</td>'
       +'<td style="font-weight:600">'+escH(o.client)+'</td>'
       +'<td><span style="font-size:10px;font-weight:600;background:'+step.bg+';color:'+step.color+';padding:3px 8px;border-radius:6px">Step '+step.num+': '+escH(step.cat)+'</span></td>'
-      +'<td style="color:var(--blue);font-weight:600">'+total+'</td>'
+      +'<td style="color:var(--blue);font-weight:600">'+totalSteps+'</td>'
       +'<td style="color:var(--green);font-weight:600">'+doneCount+'</td>'
       +'<td style="color:var(--red);font-weight:600">'+overdueSteps+'</td>'
       +'<td><span style="padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;background:'+(delayPct===0?'var(--green-bg)':delayPct<30?'var(--orange-bg)':'var(--red-bg)')+';color:'+(delayPct===0?'var(--green)':delayPct<30?'var(--orange)':'var(--red)')+'">'+delayPct+'%</span></td>'
@@ -852,9 +889,9 @@ function renderTable(){
   if(!data.length){empty.style.display='block';tbl.style.display='none';return;}
   empty.style.display='none';tbl.style.display='';
   document.getElementById('tbody').innerHTML=data.map(function(o,i){
-    var cs=getCurrentStep(o);var si=STEPS.findIndex(function(s){return s.key===cs;});var step=STEPS[si]||STEPS[0];
+    var cs=getCurrentStep(o);var steps=getSteps(o);var si=steps.findIndex(function(s){return s.key===cs;});var step=steps[si]||steps[0];
     var doneCount=countDoneSteps(o),od=isOrderOverdue(o);
-    var dots=STEPS.slice(0,10).map(function(s){var st=getStepStatus(o,s.key);return'<div class="sp-dot '+st+'"></div>';}).join('');
+    var dots=steps.slice(0,10).map(function(s){var st=getStepStatus(o,s.key);return'<div class="sp-dot '+st+'"></div>';}).join('');
     return'<tr onclick="openPipeline(\''+o.id+'\')" style="'+(od?'background:rgba(220,38,38,.02)':'')+'">'
       +'<td style="color:var(--dim);font-size:11px;font-weight:600">'+(i+1)+'</td>'
       +'<td style="font-family:monospace;font-size:10px;color:var(--blue);font-weight:600">'+escH(o.id.substring(0,14))+'</td>'
@@ -865,7 +902,7 @@ function renderTable(){
       +'<td style="font-size:11px">'+escH(o.qty)+'</td>'
       +'<td style="font-size:11px;color:var(--sub);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(o.address)+'</td>'
       +'<td><span style="font-size:10px;font-weight:600;background:'+step.bg+';color:'+step.color+';padding:3px 8px;border-radius:6px;white-space:nowrap">'+step.num+': '+escH(step.cat)+'</span>'+(od?'<span style="color:var(--red);font-size:9px;margin-left:4px">⚠</span>':'')+'</td>'
-      +'<td><div class="step-progress">'+dots+'</div><div style="font-size:9px;color:var(--dim);margin-top:2px">'+doneCount+'/'+STEPS.length+'</div></td>'
+      +'<td><div class="step-progress">'+dots+'</div><div style="font-size:9px;color:var(--dim);margin-top:2px">'+doneCount+'/'+steps.length+'</div></td>'
       +'<td style="font-size:11px;color:var(--sub)">'+getNextActionDate(o)+'</td>'
       +'<td style="font-size:11px;color:var(--dim);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(o.remarks)+'</td>'
       +'</tr>';
@@ -922,6 +959,7 @@ function getOrder(){return orders.find(function(x){return x.id===viewingId;})||n
 
 function openPipeline(id){
   viewingId=id;var o=getOrder();if(!o)return;
+  var steps=getSteps(o);
   document.getElementById('pipeTitle').innerHTML=escH(o.client)+' <span>Pipeline</span>';
   document.getElementById('pipeHdr').innerHTML=
     '<div class="ph-id">ORDER ID: '+escH(o.id)+'</div>'
@@ -934,7 +972,8 @@ function openPipeline(id){
     +'<div class="ph-m">📅 <span>Start: '+fmtDate(o.startDate)+'</span></div>'
     +'</div>'
     +'<div class="ph-badges">'
-    +'<span style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(96,165,250,.2);color:#93C5FD">'+countDoneSteps(o)+'/'+STEPS.length+' Steps Done</span>'
+    +'<span style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(96,165,250,.2);color:#93C5FD">'+countDoneSteps(o)+'/'+steps.length+' Steps Done</span>'
+    +(o.pipeline.repairNeeded?'<span style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(220,38,38,.2);color:#FCA5A5">🔧 Repair Required</span>':'')
     +(isOrderOverdue(o)?'<span style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(220,38,38,.2);color:#FCA5A5">⚠ Overdue</span>':'')
     +'</div>';
   buildFlow(o);
@@ -957,23 +996,20 @@ function buildFlow(o){
   var p=o.pipeline;
   var c=document.getElementById('flowSteps');c.innerHTML='';
   var cs=p.currentStep||'s01';
-  var csIdx=STEPS.findIndex(function(s){return s.key===cs;});
-  // Role-based permissions:
-  // owner  → sab edit kar sakta hai (planned + actual + notes)
-  // scm    → sirf active step par "Mark Done" button dikhta hai, actual auto-fill hoti hai, planned/notes edit nahi
-  // pc     → sirf read-only, kuch bhi nahi
-  var isOwner = currentRole === 'owner';
-  var ro = READ_ONLY.includes(currentRole); // pc = true
-  var canEdit = isOwner; // sirf owner sab edit kar sakta hai
+  var steps=getSteps(o);
+  var csIdx=steps.findIndex(function(s){return s.key===cs;});
 
-  STEPS.forEach(function(step,idx){
+  var isOwner = currentRole === 'owner';
+  var ro = READ_ONLY.includes(currentRole);
+  var canEdit = isOwner;
+
+  steps.forEach(function(step,idx){
     var sd=p[step.key]||{planned:'',actual:'',status:'pending',notes:'',notesLog:[]};
     var isDone=idx<csIdx||(idx===csIdx&&sd.actual);
     var isActive=step.key===cs&&!sd.actual;
     var isLocked=idx>csIdx;
     var isOverdueStep=isActive&&sd.planned&&sd.planned<today();
 
-    // Delay calculation
     var delayDays=sd.actual&&sd.planned?daysDiff(sd.planned,sd.actual):null;
     var delBadge=delayDays===null?'<span class="delay-badge db-w">Pending</span>'
       :delayDays===0?'<span class="delay-badge db-ok">✓ On Time</span>'
@@ -981,19 +1017,63 @@ function buildFlow(o){
       :'<span class="delay-badge db-ok">'+Math.abs(delayDays)+'d Early</span>';
 
     var card=document.createElement('div');
-    card.className='step-card'+(isActive?' active-step':'')+(isDone?' done-step':'')+(isLocked?' locked':'')+(isOverdueStep?' overdue-step':'');
+    var repairClass = step.isRepair ? ' repair-step' : '';
+    card.className='step-card'+repairClass+(isActive?' active-step':'')+(isDone?' done-step':'')+(isLocked?' locked':'')+(isOverdueStep?' overdue-step':'');
     if(isActive||isDone) card.classList.add('open');
 
     var statusClass=isDone?'ssb-d':isActive?(isOverdueStep?'ssb-o':'ssb-a'):'ssb-p';
     var statusLabel=isDone?'✓ Done':isActive?(isOverdueStep?'⚠ Overdue':'● Active'):'○ Pending';
 
-    // Notes log
     var notesHtml=(sd.notesLog&&sd.notesLog.length)?sd.notesLog.map(function(n){
       return'<div class="note-item"><span class="note-time">'+n.ts+'</span>'+escH(n.text)+'</div>';
     }).join(''):'<div style="color:var(--dim);font-size:11px">No notes yet</div>';
 
-    // Auto-filled actual date for non-owner (aaj ki date, readonly)
     var actualDateDisplay = sd.actual || (isActive && !isOwner ? today() : '');
+
+    // ── OWNER EDIT: Planned date field ──
+    // Owner can always change planned date even on done steps
+    var plannedField;
+    if(canEdit){
+      plannedField='<div class="fg"><label class="fl">Planned Date'
+        +(isDone?'':'')+' <span style="font-size:9px;color:var(--blue);font-weight:600">(Editable)</span></label>'
+        +'<input class="fi" type="date" id="pl-'+step.key+'" value="'+(sd.planned||'')+'">'
+        +'</div>';
+    } else {
+      plannedField='<div class="fg"><label class="fl">Planned Date</label>'
+        +'<input class="fi" type="date" id="pl-'+step.key+'" value="'+(sd.planned||'')+'" disabled>'
+        +'</div>';
+    }
+
+    // ── OWNER EDIT: Actual date field ──
+    var actualField;
+    if(canEdit){
+      actualField='<div class="fg"><label class="fl">Actual Date <span style="font-size:9px;color:var(--blue);font-weight:600">(Editable)</span></label>'
+        +'<input class="fi" type="date" id="ac-'+step.key+'" value="'+(sd.actual||'')+'">'
+        +'</div>';
+    } else if(isActive && !ro){
+      actualField='<div class="fg"><label class="fl">Actual Date <span style="font-size:9px;color:var(--green)">(Auto: Today)</span></label>'
+        +'<input class="fi" type="date" id="ac-'+step.key+'" value="'+actualDateDisplay+'" disabled style="background:var(--green-bg);border-color:rgba(5,150,105,.3);color:var(--green)">'
+        +'</div>';
+    } else {
+      actualField='<div class="fg"><label class="fl">Actual Date</label>'
+        +'<input class="fi" type="date" id="ac-'+step.key+'" value="'+(sd.actual||'')+'" disabled>'
+        +'</div>';
+    }
+
+    // ── OWNER EDIT SAVE BUTTON for already-done steps ──
+    var ownerEditBtn='';
+    if(isOwner && isDone){
+      ownerEditBtn='<button class="save-step-btn" style="background:var(--gold);margin-top:6px" onclick="ownerSaveStepEdit(\''+step.key+'\')">💾 Save Changes (Dates & Notes)</button>';
+    }
+
+    // Notes field
+    var notesAlreadySaved = sd.notes && sd.notes.trim().length > 0;
+    var notesDisabled = ro ? 'disabled' : (isOwner ? '' : (notesAlreadySaved ? 'disabled title="Notes already saved — only Owner can edit"' : ''));
+    var notesStyle = (!isOwner && notesAlreadySaved) ? 'style="background:#FFF8E6;border-color:#F0D080;cursor:not-allowed"' : '';
+    var notesLabel = (!isOwner && notesAlreadySaved) ? 'Notes <span style="font-size:9px;color:var(--orange);font-weight:600">(Locked — Owner only)</span>' : 'Notes';
+    var notesField='<div class="sbrow full"><div class="fg"><label class="fl">'+notesLabel+'</label>'
+      +'<input class="fi" id="nt-'+step.key+'" value="'+(sd.notes||'').replace(/"/g,'&quot;')+'" placeholder="Add notes for this step..." '+notesDisabled+' '+notesStyle+'>'
+      +'</div></div>';
 
     card.innerHTML=
       '<div class="step-head" onclick="toggleStep(this)">'
@@ -1001,7 +1081,7 @@ function buildFlow(o){
           +'<div class="step-num-badge" style="background:'+step.bg+';color:'+step.color+'">'+step.num+'</div>'
           +'<div class="step-title-wrap">'
             +'<div class="step-cat">'+step.cat+' · '+(isActive&&sd.planned?'Due: '+fmtDate(sd.planned):'Planned: '+fmtDate(sd.planned))+'</div>'
-            +'<div class="step-title">'+step.title+'</div>'
+            +'<div class="step-title">'+(step.isRepair?'🔧 ':'')+''+step.title+'</div>'
           +'</div>'
         +'</div>'
         +'<div style="display:flex;align-items:center;gap:7px">'
@@ -1011,29 +1091,15 @@ function buildFlow(o){
       +'</div>'
       +'<div class="step-body">'
         +'<div class="sbrow">'
-          // Planned date: sirf Owner edit kar sakta hai
-          +'<div class="fg"><label class="fl">Planned Date</label><input class="fi" type="date" id="pl-'+step.key+'" value="'+(sd.planned||'')+'" '+(canEdit?'':'disabled')+'></div>'
-          // Actual date: Owner edit kar sakta hai, baaki ke liye auto-fill (aaj ki date) + readonly
-          +(canEdit
-            ? '<div class="fg"><label class="fl">Actual Date</label><input class="fi" type="date" id="ac-'+step.key+'" value="'+(sd.actual||'')+'" ></div>'
-            : (isActive && !ro
-                ? '<div class="fg"><label class="fl">Actual Date <span style="font-size:9px;color:var(--green)">(Auto: Today)</span></label><input class="fi" type="date" id="ac-'+step.key+'" value="'+actualDateDisplay+'" disabled style="background:var(--green-bg);border-color:rgba(5,150,105,.3);color:var(--green)"></div>'
-                : '<div class="fg"><label class="fl">Actual Date</label><input class="fi" type="date" id="ac-'+step.key+'" value="'+(sd.actual||'')+'" disabled></div>'
-              )
-          )
+          +plannedField
+          +actualField
           +'<div class="fg"><label class="fl">Time Delay</label><div style="padding-top:8px">'+delBadge+'</div></div>'
         +'</div>'
-        // Notes: Owner = hamesha edit, SCM = sirf pehli baar (agar pehle se notes nahi hain), PC = disabled
-        +(function(){
-          var notesAlreadySaved = sd.notes && sd.notes.trim().length > 0;
-          var notesDisabled = ro ? 'disabled' : (isOwner ? '' : (notesAlreadySaved ? 'disabled title="Notes already saved — only Owner can edit"' : ''));
-          var notesStyle = (!isOwner && notesAlreadySaved) ? 'style="background:#FFF8E6;border-color:#F0D080;cursor:not-allowed"' : '';
-          var notesLabel = (!isOwner && notesAlreadySaved) ? 'Notes <span style="font-size:9px;color:var(--orange);font-weight:600">(Locked — Owner only)</span>' : 'Notes';
-          return '<div class="sbrow full"><div class="fg"><label class="fl">'+notesLabel+'</label><input class="fi" id="nt-'+step.key+'" value="'+(sd.notes||'').replace(/"/g,'&quot;')+'" placeholder="Add notes for this step..." '+notesDisabled+' '+notesStyle+'></div></div>';
-        })()
+        +notesField
+        +ownerEditBtn
         +(step.key==='s08'?buildDocChecklist(sd,ro):'')
-        // Save button: Owner + SCM dono dekh sakte hain (active step par)
-        +(!ro&&isActive&&step.key!=='s18'?'<button class="save-step-btn" onclick="saveStepAndAdvance(\''+step.key+'\','+idx+')">💾 Mark as Done → Move to Step '+(idx<19?STEPS[idx+1].num:'Complete')+'</button>':'')
+        +(!ro&&isActive&&step.key!=='s18'&&!step.isRepair?'<button class="save-step-btn" onclick="saveStepAndAdvance(\''+step.key+'\','+idx+')">💾 Mark as Done → Move to Step '+(idx<steps.length-1?steps[idx+1].num:'Complete')+'</button>':'')
+        +(!ro&&isActive&&step.isRepair?'<button class="save-step-btn" style="background:#DC2626" onclick="saveStepAndAdvance(\''+step.key+'\','+idx+')">🔧 Repair Done → Move to Step '+steps[idx+1].num+'</button>':'')
         +(step.key==='s17'&&isActive&&!ro?'<div style="margin-top:10px;padding:14px;background:var(--purple-bg);border:1.5px solid rgba(124,58,237,.2);border-radius:10px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--purple);margin-bottom:10px">🔍 QC Inspection Result</div>'+buildQCDecision()+'</div>':'')
         +(step.key==='s18'&&isActive&&!ro?buildQCDecision():'')
         +'<div class="step-notes-box"><div class="step-notes-title">📝 Activity Log</div>'+notesHtml+'</div>'
@@ -1041,9 +1107,51 @@ function buildFlow(o){
 
     c.appendChild(card);
 
-    if(idx<STEPS.length-1){
+    if(idx<steps.length-1){
       var conn=document.createElement('div');conn.className='connector';conn.textContent='↓';c.appendChild(conn);
     }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// OWNER: Save edited dates/notes on done step
+// ═══════════════════════════════════════════════
+function ownerSaveStepEdit(stepKey){
+  if(currentRole !== 'owner'){showToast('Only Owner can edit','e');return;}
+  var o=getOrder();if(!o)return;
+
+  var plEl=document.getElementById('pl-'+stepKey);
+  var acEl=document.getElementById('ac-'+stepKey);
+  var ntEl=document.getElementById('nt-'+stepKey);
+
+  var changed=false;
+  if(plEl && plEl.value && plEl.value !== o.pipeline[stepKey].planned){
+    o.pipeline[stepKey].planned = plEl.value;
+    changed=true;
+  }
+  if(acEl && acEl.value !== o.pipeline[stepKey].actual){
+    o.pipeline[stepKey].actual = acEl.value;
+    changed=true;
+  }
+  if(ntEl){
+    var newNote = ntEl.value.trim();
+    var oldNote = (o.pipeline[stepKey].notes||'').trim();
+    if(newNote !== oldNote){
+      o.pipeline[stepKey].notes = newNote;
+      if(!o.pipeline[stepKey].notesLog) o.pipeline[stepKey].notesLog=[];
+      var now=new Date();
+      var ts=now.getDate()+' '+MON[now.getMonth()]+' '+String(now.getFullYear()).slice(2)+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+      o.pipeline[stepKey].notesLog.push({text:'[Owner edit] '+newNote, ts:ts, by:ROLE_LABELS['owner']});
+      changed=true;
+    }
+  }
+
+  if(!changed){showToast('No changes to save','i');return;}
+
+  savePipe(function(){
+    buildAll();
+    showToast('✓ Step '+stepKey.toUpperCase()+' updated by Owner','s');
+    openPipeline(viewingId);
   });
 }
 
@@ -1099,7 +1207,7 @@ function buildQCDecision(){
     +'<div class="qc-btn qc-fail" onclick="qcResult(\'fail\')">'
       +'<div class="qc-icon">❌</div>'
       +'<div class="qc-lbl">QC Failed</div>'
-      +'<div class="qc-sub">Arrange Repair Team</div>'
+      +'<div class="qc-sub">Arrange Repair Team (Step 18R)</div>'
     +'</div>'
   +'</div>';
 }
@@ -1107,16 +1215,15 @@ function buildQCDecision(){
 function saveStepAndAdvance(stepKey, idx){
   var o=getOrder();if(!o)return;
   var isOwner = currentRole === 'owner';
+  var steps = getSteps(o);
   var acEl=document.getElementById('ac-'+stepKey);
   var plEl=document.getElementById('pl-'+stepKey);
   var ntEl=document.getElementById('nt-'+stepKey);
 
-  // Actual date:
-  // Owner → jo date daali hai woh use karo
-  // Baaki → aaj ki date auto use karo (disabled field ignore)
+  // Actual date
   var actualDate = isOwner ? ((acEl&&acEl.value)?acEl.value:today()) : today();
 
-  // Planned date: sirf Owner update kar sakta hai
+  // Planned date: only owner updates
   if(isOwner && plEl && plEl.value){
     o.pipeline[stepKey].planned = plEl.value;
   }
@@ -1124,7 +1231,7 @@ function saveStepAndAdvance(stepKey, idx){
   o.pipeline[stepKey].actual = actualDate;
   o.pipeline[stepKey].status = 'done';
 
-  // Notes: Owner hamesha update kar sakta hai, SCM sirf pehli baar (agar pehle se blank hai)
+  // Notes
   var notesAlreadySaved = o.pipeline[stepKey].notes && o.pipeline[stepKey].notes.trim().length > 0;
   if(ntEl && ntEl.value && (isOwner || (!notesAlreadySaved && currentRole === 'scm'))){
     o.pipeline[stepKey].notes = ntEl.value;
@@ -1137,33 +1244,35 @@ function saveStepAndAdvance(stepKey, idx){
     });
   }
 
-  // Activity log — role + time record karo
+  // Activity log
   if(!o.pipeline[stepKey].notesLog) o.pipeline[stepKey].notesLog=[];
   var now2=new Date();
   var ts2=now2.getDate()+' '+MON[now2.getMonth()]+' '+String(now2.getFullYear()).slice(2)+' '+String(now2.getHours()).padStart(2,'0')+':'+String(now2.getMinutes()).padStart(2,'0');
   o.pipeline[stepKey].notesLog.push({
     text:'Step marked as done on '+actualDate,
-    ts: ts2,
+    ts:ts2,
     by: ROLE_LABELS[currentRole]||currentRole
   });
 
   // Advance to next step
-  if(idx<STEPS.length-1){
-    var nextStep=STEPS[idx+1];
+  if(idx<steps.length-1){
+    var nextStep=steps[idx+1];
     o.pipeline.currentStep=nextStep.key;
+    if(!o.pipeline[nextStep.key]) o.pipeline[nextStep.key]={planned:'',actual:'',status:'pending',notes:'',notesLog:[]};
     if(!o.pipeline[nextStep.key].actual){
-      o.pipeline[nextStep.key].planned=addDays(actualDate,nextStep.addDays);
+      o.pipeline[nextStep.key].planned=addDays(actualDate,nextStep.addDays||1);
     }
   } else {
-    // Last step done
     o.pipeline.currentStep='done';
   }
-  savePipe(function(){buildAll();showToast('✓ Step '+STEPS[idx].num+' done! Moved to Step '+(idx<STEPS.length-1?STEPS[idx+1].num:'Complete'),'s');openPipeline(viewingId);});
+  savePipe(function(){buildAll();showToast('✓ Step '+steps[idx].num+' done! Moved to Step '+(idx<steps.length-1?steps[idx+1].num:'Complete'),'s');openPipeline(viewingId);});
 }
 
+// ═══════════════════════════════════════════════
+// QC RESULT — Pass continues to s19, Fail adds repair step
+// ═══════════════════════════════════════════════
 function qcResult(result){
   var o=getOrder();if(!o)return;
-  // Works from both s17 and s18 — use whichever actual date is filled
   var acEl17=document.getElementById('ac-s17');
   var acEl18=document.getElementById('ac-s18');
   var actualDate=(acEl17&&acEl17.value)?acEl17.value:(acEl18&&acEl18.value)?acEl18.value:today();
@@ -1173,20 +1282,33 @@ function qcResult(result){
     o.pipeline.s17.actual=actualDate;
     o.pipeline.s17.status='done';
   }
-  // Mark s18 done (skip to it)
+  // Mark s18 done
   o.pipeline.s18.actual=actualDate;
   o.pipeline.s18.status='done';
   o.pipeline.qcResult=result;
 
   if(result==='pass'){
+    o.pipeline.repairNeeded=false;
     o.pipeline.currentStep='s19';
+    if(!o.pipeline.s19) o.pipeline.s19={planned:'',actual:'',status:'pending',notes:'',notesLog:[]};
     o.pipeline.s19.planned=addDays(actualDate,2);
     showToast('✅ QC Passed! Proceeding to Final Delivery','s');
   } else {
+    // QC FAIL — add repair step
     o.pipeline.repairNeeded=true;
-    o.pipeline.currentStep='s19';
-    o.pipeline.s19.planned=addDays(actualDate,3);
-    showToast('⚠ QC Failed — Repair arranged, then Final Delivery','i');
+    // Repair planned = QC actual date + 5 working days
+    var repairPlanned = addWorkingDays(actualDate, 5);
+    if(!o.pipeline[REPAIR_STEP.key]) o.pipeline[REPAIR_STEP.key]={planned:'',actual:'',status:'pending',notes:'',notesLog:[]};
+    o.pipeline[REPAIR_STEP.key].planned=repairPlanned;
+    o.pipeline[REPAIR_STEP.key].actual='';
+    o.pipeline[REPAIR_STEP.key].status='pending';
+    // Log the failure
+    if(!o.pipeline.s18.notesLog) o.pipeline.s18.notesLog=[];
+    var now=new Date();
+    var ts=now.getDate()+' '+MON[now.getMonth()]+' '+String(now.getFullYear()).slice(2)+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+    o.pipeline.s18.notesLog.push({text:'QC FAILED — Repair team arranged. Repair due: '+fmtDate(repairPlanned), ts:ts, by:ROLE_LABELS[currentRole]||currentRole});
+    o.pipeline.currentStep='s18r';
+    showToast('⚠ QC Failed — Step 18R: Arrange Repair Team added (Due: '+fmtDate(repairPlanned)+')','i');
   }
   savePipe(function(){buildAll();openPipeline(viewingId);});
 }
