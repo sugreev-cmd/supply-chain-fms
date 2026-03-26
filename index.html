@@ -375,7 +375,7 @@ td{padding:10px 12px;vertical-align:middle}
         </div>
         <div class="tw">
           <table id="tbl" style="display:none">
-            <thead><tr><th>#</th><th>Order ID</th><th>Start Date</th><th>Client</th><th>Phone</th><th>Product / Details</th><th>Quantity</th><th>Shipping Address</th><th>Current Step</th><th>Progress</th><th>Next Action Date</th><th>Remarks</th></tr></thead>
+            <thead><tr><th>#</th><th>Order ID</th><th>Start Date</th><th>Client</th><th>Phone</th><th>Product / Details</th><th>Quantity</th><th>Shipping Address</th><th>Current Step</th><th>Progress</th><th>Next Action Date</th><th>Duration / Status</th></tr></thead>
             <tbody id="tbody"></tbody>
           </table>
           <div id="emptyDiv" class="empty"><div class="empty-icon">🚢</div><div class="empty-title">No Orders Yet</div><div class="empty-sub">Add your first supply chain order</div><button class="empty-btn" id="emptyAddBtn">+ Add First Order</button></div>
@@ -576,6 +576,36 @@ function getNextActionDate(order){
   var cs = getCurrentStep(order);
   if(!order.pipeline || !order.pipeline[cs]) return '—';
   return fmtDate(order.pipeline[cs].planned);
+}
+
+// Duration from S05 actual → S20 actual (or today if still running)
+function getDurationCell(order){
+  var p = order.pipeline;
+  if(!p) return '<span style="color:var(--dim)">—</span>';
+
+  var s20actual = p.s20 && p.s20.actual;
+  var s05actual = p.s05 && p.s05.actual;
+
+  // ── Completed ──
+  if(s20actual){
+    var totalDays = s05actual ? daysDiff(s05actual, s20actual) : '—';
+    return '<div style="display:inline-flex;flex-direction:column;gap:3px">'
+      +'<span style="padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;background:var(--green-bg);color:var(--green);border:1px solid rgba(5,150,105,.2)">✅ Completed</span>'
+      +(s05actual?'<span style="font-size:10px;color:var(--dim)">'+totalDays+' days (S05→S20)</span>':'')
+    +'</div>';
+  }
+
+  // ── S05 done, still running ──
+  if(s05actual){
+    var elapsed = daysDiff(s05actual, today());
+    return '<div style="display:inline-flex;flex-direction:column;gap:3px">'
+      +'<span style="padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;background:var(--orange-bg);color:var(--orange);border:1px solid rgba(217,119,6,.2)">⏳ In Progress</span>'
+      +'<span style="font-size:10px;color:var(--dim)">'+elapsed+' days elapsed</span>'
+    +'</div>';
+  }
+
+  // ── S05 not yet done ──
+  return '<span style="font-size:10px;color:var(--dim)">⏸ Pre-Production</span>';
 }
 
 // ═══════════════════════════════════════════════
@@ -901,10 +931,10 @@ function renderTable(){
       +'<td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(o.details)+'</td>'
       +'<td style="font-size:11px">'+escH(o.qty)+'</td>'
       +'<td style="font-size:11px;color:var(--sub);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(o.address)+'</td>'
-      +'<td><span style="font-size:10px;font-weight:600;background:'+step.bg+';color:'+step.color+';padding:3px 8px;border-radius:6px;white-space:nowrap">'+step.num+': '+escH(step.cat)+'</span>'+(od?'<span style="color:var(--red);font-size:9px;margin-left:4px">⚠</span>':'')+'</td>'
+      +'<td style="max-width:220px"><span style="font-size:10px;font-weight:600;background:'+step.bg+';color:'+step.color+';padding:3px 8px;border-radius:6px;display:inline-block;margin-bottom:3px">'+step.num+': '+escH(step.cat)+'</span>'+(od?'<span style="color:var(--red);font-size:9px;margin-left:4px">⚠</span>':'')+'<div style="font-size:10px;color:var(--sub);line-height:1.35;margin-top:2px" title="'+escH(step.title)+'">'+escH(step.title.length>70?step.title.substring(0,70)+'...':step.title)+'</div></td>'
       +'<td><div class="step-progress">'+dots+'</div><div style="font-size:9px;color:var(--dim);margin-top:2px">'+doneCount+'/'+steps.length+'</div></td>'
       +'<td style="font-size:11px;color:var(--sub)">'+getNextActionDate(o)+'</td>'
-      +'<td style="font-size:11px;color:var(--dim);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(o.remarks)+'</td>'
+      +'<td style="font-size:11px;min-width:130px">'+getDurationCell(o)+'</td>'
       +'</tr>';
   }).join('');
 }
