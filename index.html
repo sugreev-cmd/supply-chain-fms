@@ -533,19 +533,24 @@ function getStepStatus(order, stepKey){
 }
 
 function isOrderOverdue(order){
+  if(getOrderCategory(order)==='completed') return false;
   var cs = getCurrentStep(order);
   return getStepStatus(order, cs) === 'overdue';
 }
 
 function isDueToday(order){
+  if(getOrderCategory(order)==='completed') return false;
   var cs = getCurrentStep(order);
   if(!order.pipeline || !order.pipeline[cs]) return false;
+  if(order.pipeline[cs].actual) return false;
   return order.pipeline[cs].planned === today();
 }
 
 function isDueThisWeek(order){
+  if(getOrderCategory(order)==='completed') return false;
   var cs = getCurrentStep(order);
   if(!order.pipeline || !order.pipeline[cs]) return false;
+  if(order.pipeline[cs].actual) return false;
   var pd = order.pipeline[cs].planned;
   if(!pd) return false;
   var diff = daysDiff(today(), pd);
@@ -553,13 +558,14 @@ function isDueThisWeek(order){
 }
 
 function getOrderCategory(order){
-  var cs = getCurrentStep(order);
   var p = order.pipeline || {};
-  if(cs === 'done') return 'completed';
+  // Check raw pipeline.currentStep — getCurrentStep() converts 'done' to 's20' so we check directly
+  if(p.currentStep === 'done') return 'completed';
   if(p.s20 && p.s20.actual) return 'completed';
   var steps = getSteps(order);
   var doneCount = countDoneSteps(order);
   if(doneCount >= steps.length) return 'completed';
+  var cs = getCurrentStep(order);
   var idx = steps.findIndex(function(s){return s.key===cs;});
   if(idx >= 12 && idx <= 14) return 'transit';
   if(idx >= 15 && idx <= 16) return 'warehouse';
@@ -758,7 +764,10 @@ function buildDash(){
   }).join('')+'<div style="margin-top:10px;padding:10px 12px;background:var(--green-bg);border:1px solid rgba(5,150,105,.2);border-radius:8px;display:flex;align-items:center;justify-content:space-between"><div style="font-size:10px;color:var(--sub)">Completion Rate</div><div style="font-size:20px;font-weight:800;color:var(--green)">'+cr+'%</div></div>';
 
   // ── ACTION LIST (today + overdue) ──
-  var hot=orders.filter(function(o){return isDueToday(o)||isOrderOverdue(o);}).sort(function(a,b){return(isOrderOverdue(b)?1:0)-(isOrderOverdue(a)?1:0);});
+  var hot=orders.filter(function(o){
+    if(getOrderCategory(o)==='completed') return false;
+    return isDueToday(o)||isOrderOverdue(o);
+  }).sort(function(a,b){return(isOrderOverdue(b)?1:0)-(isOrderOverdue(a)?1:0);});
   document.getElementById('hotBadge').textContent=hot.length+' items';
   document.getElementById('hotlist').innerHTML=hot.length?hot.slice(0,7).map(function(o){
     var od=isOrderOverdue(o);
@@ -768,7 +777,7 @@ function buildDash(){
     return'<div class="hot-item '+(od?'ov':'td2')+'" onclick="openPipeline(\''+o.id+'\')">'
       +'<div style="width:30px;height:30px;border-radius:8px;background:'+(od?'var(--red)':'var(--orange)')+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">'+step.num+'</div>'
       +'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(o.client)+'</div>'
-      +'<div style="font-size:10px;color:var(--dim);margin-top:1px">'+escH(step.cat)+' · '+o.phone+'</div></div>'
+      +'<div style="font-size:10px;color:var(--dim);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+escH(step.title)+'">S'+step.num+' · '+escH(step.title.length>55?step.title.substring(0,55)+'…':step.title)+'</div></div>'
       +'<div style="text-align:right;flex-shrink:0"><div style="font-size:10px;font-weight:700;color:'+(od?'var(--red)':'var(--orange)')+'">'+( od?dd+'d late':'Today')+'</div>'
       +'<div style="font-size:9px;color:var(--dim);margin-top:1px">'+fmtDate(pd)+'</div></div></div>';
   }).join(''):'<div style="text-align:center;padding:24px;color:var(--dim);font-size:12px">🎉 All clear!</div>';
